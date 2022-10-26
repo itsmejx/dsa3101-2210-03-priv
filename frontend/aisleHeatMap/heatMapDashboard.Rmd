@@ -1,4 +1,4 @@
----
+  ---
 title: "heatMapDashboard"
 author: "Han Jiaxu"
 date: '2022-10-21'
@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(flexdashboard)
 library(tidyverse)
 library(plotly)
+library(jsonlite)
 library(DT)
 ##add fake information here first
 data = readLines("fakeData.json")
@@ -19,7 +20,7 @@ for (i in 1:length(fake_json)) {
   idx = i
   occ = fake_json[[i]]$occurrence
   temp  = data.frame(id = idx, camera = occ[1], time = occ[2])
-  data = rbind(empty_table, temp)
+  data = rbind(data, temp)
   }
 ```
 
