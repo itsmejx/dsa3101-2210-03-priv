@@ -11,10 +11,12 @@ library(flexdashboard)
 library(tidyverse)
 library(plotly)
 library(DT)
+library(jsonlite)
 ##add fake information here first
 data = readLines("fakeData.json")
 fake_json = lapply(data, fromJSON)
 data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+empty_table = data.frame()
 for (i in 1:length(fake_json)) {
   idx = i
   occ = fake_json[[i]]$occurrence
@@ -43,14 +45,14 @@ Column {data-width=350}
 ### Chart B
 
 ```{r echo=FALSE}
-plot(pressure)
+#plot(pressure)
 
 ```
 
 ### Chart C
 
 ```{r}
-plot(cars)
+#plot(cars)
 ```
 
 
