@@ -4,3 +4,5 @@ RUN sudo apt -y upgrade
 RUN sudo apt install -y vim nano
 RUN sudo apt install -y libxml2 libxml2-dev libudunits2-dev
 RUN install2.r tidyverse httr jsonlite plotly flexdashboard DT
+COPY aisleHeatMap /svr/shiny-server/aisleHeatMap
+COPY aisleTraffic /svr/shiny-server/Traffic
