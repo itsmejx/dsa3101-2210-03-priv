@@ -69,7 +69,7 @@ def crop(path2images, save):
             continue
         
         image_np = load_image_into_numpy_array(path2images[i])
-
+        filename = path2images[i][-33:-4]   #retrieve filename for the picture
         for j in range(len(all_boxes[i])):    # loop through all boxes in a picture
             a, b, c, d = all_boxes[i][j]    # normalized coordinates of bounding box
             xmin = int(np.round(b * 320))
@@ -79,14 +79,18 @@ def crop(path2images, save):
             # (xmin,ymin) is the top left corner; (xmax,ymax) is the bottom right corner
 
             shoe = array_to_img(image_np[ymin:ymax+1, xmin:xmax+1])
-            shoe.save(f"{save}/{i+1}-{j+1}.jpg")
+            shoe.save(f"{save}/{filename}_{j}.jpg") #new way of naming
+            #shoe.save(f"{save}/{i+1}-{j+1}.jpg") #old way of naming, delete after confirmed
             
 
 
 if __name__ == "__main__":
-    folder_dir = sys.argv[1]
+    folder_dir = sys.argv[1] #directory to retrieve pictures
     images = Path(folder_dir).glob('*')
     paths = [str(i) for i in images] 
-    crop(paths, save=f"output/{sys.argv[2]}")   
+    #within the folder, there should be another folder named "cropped_shoes",save to that folder
+    #ideally sys.argv[2] = "cropped_shoes"
+    crop(paths, save=f"{folder_dir}/{sys.argv[2]}")
+    #crop(paths, save=f"output/{sys.argv[2]}")    #delete this after confirmed
 
 
