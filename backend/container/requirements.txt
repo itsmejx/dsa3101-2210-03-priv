@@ -1,0 +1,4 @@
+opencv-python==4.6.0.66
+numpy==1.22.4
+tensorflow==2.10.0
+PIL==8.4.0
