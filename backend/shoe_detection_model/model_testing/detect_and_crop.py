@@ -88,8 +88,9 @@ if __name__ == "__main__":
     folder_dir = sys.argv[1] #directory to retrieve pictures
     images = Path(folder_dir).glob('*')
     paths = [str(i) for i in images] 
-    #within the folder, there will be another folder named "cropped_shoes",save to that folder
-    crop(paths, save=f"{folder_dir}/cropped_shoes")
+    #within the folder, there should be another folder named "cropped_shoes",save to that folder
+    #ideally sys.argv[2] = "cropped_shoes"
+    crop(paths, save=f"{folder_dir}/{sys.argv[2]}")
     #crop(paths, save=f"output/{sys.argv[2]}")    #delete this after confirmed
 
 
