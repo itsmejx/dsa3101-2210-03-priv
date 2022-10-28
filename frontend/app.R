@@ -7,9 +7,8 @@
 #    http://shiny.rstudio.com/
 #
 
-# install.packages("chron")
-
 library(shiny)
+library(shinydashboard)
 library(tidyverse)
 library(plotly)
 library(httr)
@@ -64,10 +63,10 @@ ui <- fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
           tabsetPanel(
-            tabPanel("Time series",
+            tabPanel("Aisle Traffic",
                      plotOutput("timePlot")
             ),
-            tabPanel("Time series (plotly)",
+            tabPanel("Aisle Traffic (plotly)",
                      plotlyOutput("timePlot2")
             ),
           )
@@ -75,7 +74,7 @@ ui <- fluidPage(
     ),
     
     hr(),  
-    h2("Batch Predictions"),
+    h2("Aisle products"),
     
     fluidRow(
       column(5, "Input file should contain two columns:", 
