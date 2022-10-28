@@ -1,0 +1,62 @@
+---
+title: "HDB Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(DT)
+library(jsonlite)
+library(RColorBrewer)
+library(dplyr)
+library(chron)
+data = readLines("../aisleTraffic/fakeData.json")
+fake_json = lapply(data, fromJSON)
+data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+for (i in 1:length(fake_json)) {
+  idx = i
+  occ = fake_json[[i]]$occurrence
+  temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
+  data = rbind(data, temp)
+}
+data = data %>% mutate(date = sapply(strsplit(data$time, "-T"), "[[", 1),
+                       time = times(sapply(strsplit(sapply(strsplit(data$time, "-T"), "[[", 2), ".000Z"), "[[", 1))) %>% 
+  mutate(camera = as.factor(camera))
+data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
+```
+
+# Page 1
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r echo=FALSE}
+data_group = data %>% group_by(time,camera) %>% 
+  summarise(ct=n(),.groups='drop')
+p = ggplot(data_group,aes(x=time,y=ct,col=camera)) + geom_point() + geom_line()
+a = p  + scale_x_chron(format="%H:%M:%S") + scale_color_discrete()
+ggplotly(a)
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r echo=FALSE}
+a
+
+```
+
+### Chart C
+
+```{r}
+
+```
