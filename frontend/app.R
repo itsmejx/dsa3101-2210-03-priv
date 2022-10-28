@@ -7,6 +7,8 @@
 #    http://shiny.rstudio.com/
 #
 
+# install.packages("chron")
+
 library(shiny)
 library(tidyverse)
 library(plotly)
@@ -14,6 +16,7 @@ library(httr)
 library(jsonlite)
 library(RColorBrewer)
 library(dplyr)
+library(chron)
 
 
 #data input
@@ -32,7 +35,9 @@ for (i in 1:length(fake_json)) {
 ##
 
 data = data %>% mutate(date = sapply(strsplit(data$time, "-T"), "[[", 1),
-                time = strsplit(sapply(strsplit(data$time, "-T"), "[[", 2), ".000Z"))
+                       time = times(sapply(strsplit(sapply(strsplit(data$time, "-T"), "[[", 2), ".000Z"), "[[", 1))) %>% 
+  mutate(camera = as.factor(camera))
+data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
   # mutate(id = as.factor(id))
 # class(data$id)
 # class(data)
@@ -46,10 +51,9 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            dateRangeInput("dates_in", 
-                           "Select start and end dates",
-                           start='2020-01-01',
-                           end='2022-02-28'),
+            dateInput("dates_in", 
+                           "Select dates",
+                           value='2022-08-18'),
             selectInput("choose_aisle",
                         "Select aisle number", 
                         choices=c("1", "2", "3", "4", "5",
@@ -86,27 +90,35 @@ ui <- fluidPage(
       column(12, tableOutput("data_display"), align="center")
     )
 )
-?filter
+
+data
+# data %>% group_by(date) %>% summarise()
+# sub_df <- reactive({filter(data, between(date, '2022-08-18', 
+#                                          '2022-08-18'), 
+#                            camera %in% c(1,2))})
+# group_by(sub_df(), date, camera)
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    sub_df <- reactive({filter(data, between(date, input$dates_in[1], 
-                                            input$dates_in[2]), 
+    sub_df <- reactive({filter(data, data.table::between(date, input$dates_in, 
+                                            input$dates_in), 
                                camera %in% input$choose_aisle)
       })
     
   output$timePlot <- renderPlot({
-    sub_df2 <- group_by(sub_df(), date, camera) %>% 
-      summarise(ct = count(id), .groups="drop") 
-    ggplot(sub_df2, aes(x=date, y=ct, col=camera)) + geom_point() + 
-      geom_line() + 
+
+    sub_df2 <- group_by(sub_df(), camera, time) %>% 
+      summarise(ct = n(), .groups="drop") 
+    ggplot(sub_df2, aes(x=time, y=ct, col=camera)) + geom_point() + 
+      geom_line() + scale_x_chron(format = "%H:%M:%S") +
       labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
   })
   output$timePlot2 <- renderPlotly({
-    sub_df2 <- group_by(sub_df(), date, aisle_choice) %>% 
-      summarise(ct = count(id), .groups="drop") 
-    p <- ggplot(sub_df2, aes(x=date, y=ct, col=camera)) + geom_point() + 
-      geom_line() + 
+    sub_df2 <- group_by(sub_df(), camera, time) %>% 
+      summarise(ct = n(), .groups="drop") 
+    p <- ggplot(sub_df2, aes(x=time, y=ct, col=camera)) + geom_point() + 
+      geom_line() +  scale_x_chron(format = "%H:%M:%S") +
       labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
     ggplotly(p)
   })
