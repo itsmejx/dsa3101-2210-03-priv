@@ -4,10 +4,13 @@ import cv2 as cv
 import numpy as np
 from pathlib import Path
 import sys
+import os
 from tensorflow.keras.preprocessing.image import array_to_img
 
 def background_remove(background_pic, directory, save):
     images = Path(directory).glob('*.jpg')
+    if not os.path.exists(save):
+        os.makedirs(save)
     for image in images:
         name = image[-33:-4]
         img = cv.imread(str(image))
