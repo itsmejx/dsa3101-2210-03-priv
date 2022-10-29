@@ -83,7 +83,6 @@ def crop(path2images, save):
             #shoe.save(f"{save}/{i+1}-{j+1}.jpg") #old way of naming, delete after confirmed
             
 
-
 if __name__ == "__main__":
     folder_dir = sys.argv[1] #directory to retrieve pictures
     output_dir = sys.argv[2]
