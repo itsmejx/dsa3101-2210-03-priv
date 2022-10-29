@@ -87,7 +87,7 @@ def crop(path2images, save):
 if __name__ == "__main__":
     folder_dir = sys.argv[1] #directory to retrieve pictures
     output_dir = sys.argv[2]
-    images = Path(folder_dir).glob('*.jp*g')
+    images = Path(folder_dir).glob('*.jpg')
     paths = [str(i) for i in images] 
     #within the folder, there should be another folder named "cropped_shoes",save to that folder
     #ideally sys.argv[2] = "cropped_shoes"
