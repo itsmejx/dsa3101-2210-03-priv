@@ -7,9 +7,8 @@
 #    http://shiny.rstudio.com/
 #
 
-# install.packages("chron")
-
 library(shiny)
+library(shinydashboard)
 library(tidyverse)
 library(plotly)
 library(httr)
@@ -18,12 +17,13 @@ library(RColorBrewer)
 library(dplyr)
 library(chron)
 
+Sys.setenv(TZ = 'Etc/GMT+0')
 
 #data input
 # hdb <- readRDS('hdb_locs.rds')
 flask_url <- "http://flask:5000/"
 
-data = readLines("aisleTraffic/fakeData.json")
+data = readLines("aisleTraffic/updatedFakeData.json")
 fake_json = lapply(data, fromJSON)
 data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
 for (i in 1:length(fake_json)) {
@@ -34,14 +34,12 @@ for (i in 1:length(fake_json)) {
 }
 ##
 
-data = data %>% mutate(date = sapply(strsplit(data$time, "-T"), "[[", 1),
-                       time = times(sapply(strsplit(sapply(strsplit(data$time, "-T"), "[[", 2), ".000Z"), "[[", 1))) %>% 
+data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
+                       time = chron(times. = sapply(strsplit(data$time, " "), "[[", 2))) %>% 
   mutate(camera = as.factor(camera))
 data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
-  # mutate(id = as.factor(id))
-# class(data$id)
-# class(data)
-# summary(data)
+
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
@@ -56,6 +54,7 @@ ui <- fluidPage(
                            value='2022-08-18'),
             selectInput("choose_aisle",
                         "Select aisle number", 
+                        selected = "1",
                         choices=c("1", "2", "3", "4", "5",
                                   "6", "7", "8", "9", "10"),
                         multiple=TRUE)
@@ -64,10 +63,10 @@ ui <- fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
           tabsetPanel(
-            tabPanel("Time series",
+            tabPanel("Aisle Traffic",
                      plotOutput("timePlot")
             ),
-            tabPanel("Time series (plotly)",
+            tabPanel("Aisle Traffic (plotly)",
                      plotlyOutput("timePlot2")
             ),
           )
@@ -75,7 +74,7 @@ ui <- fluidPage(
     ),
     
     hr(),  
-    h2("Batch Predictions"),
+    h2("Aisle products"),
     
     fluidRow(
       column(5, "Input file should contain two columns:", 
@@ -91,13 +90,6 @@ ui <- fluidPage(
     )
 )
 
-data
-# data %>% group_by(date) %>% summarise()
-# sub_df <- reactive({filter(data, between(date, '2022-08-18', 
-#                                          '2022-08-18'), 
-#                            camera %in% c(1,2))})
-# group_by(sub_df(), date, camera)
-
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -108,17 +100,19 @@ server <- function(input, output) {
     
   output$timePlot <- renderPlot({
 
-    sub_df2 <- group_by(sub_df(), camera, time) %>% 
+    sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>% 
+      mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
       summarise(ct = n(), .groups="drop") 
-    ggplot(sub_df2, aes(x=time, y=ct, col=camera)) + geom_point() + 
-      geom_line() + scale_x_chron(format = "%H:%M:%S") +
+    ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
+      geom_line() + scale_x_chron(format = "%H:%M") +
       labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
   })
   output$timePlot2 <- renderPlotly({
-    sub_df2 <- group_by(sub_df(), camera, time) %>% 
+    sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>%
+      mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
       summarise(ct = n(), .groups="drop") 
-    p <- ggplot(sub_df2, aes(x=time, y=ct, col=camera)) + geom_point() + 
-      geom_line() +  scale_x_chron(format = "%H:%M:%S") +
+    p <- ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
+      geom_line() + scale_x_chron(format = "%H:%M") +
       labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
     ggplotly(p)
   })

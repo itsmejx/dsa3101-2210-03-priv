@@ -27,5 +27,5 @@ def template_matching(folder_dir, db):
 
 if __name__ == "__main__":
     folder_dir = sys.argv[1]
-    db = sys.agrv[2]
+    db = sys.argv[2]
     template_matching(folder_dir, db)
