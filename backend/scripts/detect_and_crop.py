@@ -80,7 +80,6 @@ def crop(path2images, save):
 
             shoe = array_to_img(image_np[ymin:ymax+1, xmin:xmax+1])
             shoe.save(f"{save}/{filename}_{j}.jpg") #new way of naming
-            #shoe.save(f"{save}/{i+1}-{j+1}.jpg") #old way of naming, delete after confirmed
             
 
 
@@ -89,9 +88,6 @@ if __name__ == "__main__":
     output_dir = sys.argv[2]
     images = Path(folder_dir).glob('*.jpg')
     paths = [str(i) for i in images] 
-    #within the folder, there should be another folder named "cropped_shoes",save to that folder
-    #ideally sys.argv[2] = "cropped_shoes"
     crop(paths, save=f"{folder_dir}/{output_dir}")
-    #crop(paths, save=f"output/{sys.argv[2]}")    #delete this after confirmed
 
 
