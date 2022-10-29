@@ -19,7 +19,12 @@ def get_output(testing):
 	for cam in camera_names:
 		tmp = f'../camera/{cam}'
 		os.system(f'python background_removal.py {tmp} {tmp}/bg_removed')
-  
+
+# detect and crop shoes
+	for cam in camera_names:
+		tmp = f“../camera/{cam}/bg_removed”
+		os.system(f“python detect_and_crop.py {tmp} cropped_shoes”)
+
 if __name__ == '__main__':
     testing = sys.argv[1]
     get_output(testing)
