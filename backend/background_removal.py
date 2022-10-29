@@ -23,5 +23,5 @@ if __name__ == "__main__":
     folder_dir = sys.argv[1]
     background = cv.imread(f"{folder_dir}/background.jpg")
     pictures_dir = f"{folder_dir}/uploads"
-    save_folder = sys.agrv[2]
+    save_folder = sys.argv[2]
     background_remove(background, pictures_dir, save_folder)
