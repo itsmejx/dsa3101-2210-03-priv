@@ -35,18 +35,19 @@ for (i in 1:length(fake_json)) {
 colnames(data) = c("id", "aisle","time","date")
 
 ## Add count TRY ONLY
-data = cbind(data, count = sample(c(1:10),nrow(data),replace=TRUE), cp = sample(c(1:20),nrow(data),replace=TRUE))
+data = cbind(data, count = sample(c(1:10),nrow(data),replace=TRUE))
+
+## REAL ADD CUSTOMER COUNT
+#data = data %>% group_by(date,time, aisle) %>% count()
 
 
 data <- data %>% 
-  group_by(aisle, date, time, cp) %>%
+  group_by(aisle, date, time) %>%
     summarise(count = sum(count)) %>%
       arrange(by_group=TRUE) %>%
          ungroup()
 
 time_options <- c("12am", paste0(seq(1,11),"am"), paste0(seq(1,11),"pm"))
-
-n <- length(unique(data$cp))
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -78,36 +79,32 @@ server <- function(input, output) {
         
       subset <- data %>% filter(date == cur_date & time == cur_time )
       if (nrow(subset) == 0) {
-        col1 <- rep(c(1:10),20) ## Ownself generate aisle values
-        col2 <- rep(1, 200) ## cps
-        col3 <- rep(NA,200) ## customer counts
-        plot_data <- as.data.frame(cbind(col1, col2, col3))
+        col1 <- rep(c(1:10)) ## Ownself generate aisle values
+        col2 <- rep(NA,10) ## customer counts
+        plot_data <- as.data.frame(cbind(col1, col2))
         plot_data$col1 <- as.factor(plot_data$col1)
-        colnames(plot_data) <- c("Aisle","Cp","Count")
+        colnames(plot_data) <- c("Aisles","Customer_Count")
       } else {
-      subset <- subset %>% select(aisle, cp, count)
-      plot_col2 <- matrix(0,10,20)
+      subset <- subset %>% select(aisle, count)
+      plot_col2 <- matrix(0,10)    ## Need introduce 0 values for aisles with no customers
       for (i in c(1:nrow(subset))) {
         cur_aisle = subset[[i, "aisle"]]
-        cur_cp = subset[[i,"cp"]]
-        plot_col2[cur_aisle, cur_cp] = subset[[i,"count"]]
+        plot_col2[cur_aisle] = subset[[i,"count"]]
       }
       
-      aisle_col <- c(1:10)
+      aisle_col <- c(1:10)    ## X value --> aisle numbers
       plot_data <- as.data.frame(cbind(aisle_col, plot_col2))
-      colnames(plot_data) <- c("Aisle",c(1:20))
-      
-      plot_data <- plot_data %>% pivot_longer(!Aisle, names_to = "Cp", values_to = "Count") %>%
-        mutate(Aisle = as.factor(Aisle), Cp = rep(1, 200))
+      colnames(plot_data) <- c("Aisles","Customer_Count")
       }
+      
+      plot_data <- plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
        
       ## Plotting
       
-      ggplot(plot_data, aes(fill=Count,y=Cp,x=Aisle)) +
-        geom_bar(position="stack", stat='identity') +
+      ggplot(plot_data, aes(fill=Customer_Count,y=t,x=Aisles)) +
+        geom_bar(position="fill", stat='identity') +
         scale_fill_gradient2(low = "#FFFF99" , mid = "#FF6600", high = "red", midpoint = mean(data$count), na.value = "#FFFF99") +
-        scale_y_discrete(breaks=NULL) + 
-        theme(panel.background = element_blank(), axis.ticks = element_blank()) +
+        theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
         labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density")
       
     })
