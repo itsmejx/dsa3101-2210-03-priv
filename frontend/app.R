@@ -52,7 +52,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             dateInput("dates_in", 
-                           "Select dates",
+                           "Select date",
                            value='2022-08-18'),
             selectInput("choose_aisle",
                         "Select aisle number", 
@@ -68,7 +68,7 @@ ui <- fluidPage(
             tabPanel("Aisle Traffic",
                      plotOutput("timePlot")
             ),
-            tabPanel("Aisle Traffic (plotly)",
+            tabPanel("Aisle Traffic (interactive)",
                      plotlyOutput("timePlot2")
             ),
           )
