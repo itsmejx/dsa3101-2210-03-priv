@@ -4,7 +4,7 @@ import pandas as pd
 from form_database import *
 from template_matching import *
  
-def get_output(testing):
+def get_output():
     # remove background
     entrance_cam = '../camera/Entrance'
     os.system(f'python3 background_removal.py {entrance_cam} {entrance_cam}/bg_removed')
