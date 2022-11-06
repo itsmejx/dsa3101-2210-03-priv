@@ -2,7 +2,7 @@ Instructions for setup of camera:
 1. Download XAMPP from https://www.apachefriends.org/download.html
 2. Download Arduino IDE from https://www.arduino.cc/en/software
 3. Open XAMPP and start the Apache Server
-4. In the sendimagetolocalserver.ino folder, open the sendimagetolocalserver.ino.io sketch in the Arduino IDE
+4. In the sendimagetolocalserver.ino folder, open the sendimagetolocalserver.ino.ino sketch in the Arduino IDE
 5. Change the SSID as well as the SSID's password
 6. Change serverName to the IP address of the server receiving the photos 
 7. Update serverPath with the directory of the upload.php file
