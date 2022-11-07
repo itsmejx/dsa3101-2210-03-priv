@@ -4,7 +4,6 @@ from pathlib import Path
 import datetime
 import os
 import sys
-from tensorflow.keras.preprocessing.image import array_to_img
 
 def form_db(folder_dir):
     db = []
