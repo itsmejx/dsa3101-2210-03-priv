@@ -4,7 +4,7 @@ import pandas as pd
 from form_database import *
 from template_matching import *
  
-def get_output(testing):
+def get_output():
     # remove background
     entrance_cam = '../camera/Entrance'
     os.system(f'python3 background_removal.py {entrance_cam} {entrance_cam}/bg_removed')
@@ -40,9 +40,7 @@ def get_output(testing):
     # an id cannot appear at multiple cameras at the same timestamp, so we remove duplicates and choose to keep the first occurrence
     df = df.drop_duplicates(subset=['id', 'datetime'], ignore_index=True, keep='first')
     df = df.sort_values(by=['id'])
-    result = df.to_json(orient='records')
-    with open(f'{this_date}.txt', 'w') as f:
-        f.write(result)
+    df.to_json(f'../output/{this_date}.json', orient='records')
 
 if __name__ == '__main__':
     get_output()
