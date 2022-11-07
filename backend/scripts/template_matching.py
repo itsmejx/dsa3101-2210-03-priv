@@ -3,11 +3,9 @@
 import cv2 as cv
 import numpy as np
 from pathlib import Path
-import os
 import datetime
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.preprocessing.image import array_to_img
-import sys
 import random
 
 def template_matching(folder_dir, db):

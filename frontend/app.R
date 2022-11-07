@@ -16,6 +16,7 @@ library(jsonlite)
 library(RColorBrewer)
 library(dplyr)
 library(chron)
+library(DT)
 
 Sys.setenv(TZ = 'Etc/GMT+0')
 
@@ -24,6 +25,7 @@ Sys.setenv(TZ = 'Etc/GMT+0')
 flask_url <- "http://flask:5000/"
 
 data = readLines("aisleTraffic/updatedFakeData.json")
+aisleData = read.csv("aisleTraffic/aisleProduce.csv")
 fake_json = lapply(data, fromJSON)
 data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
 for (i in 1:length(fake_json)) {
@@ -50,7 +52,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             dateInput("dates_in", 
-                           "Select dates",
+                           "Select date",
                            value='2022-08-18'),
             selectInput("choose_aisle",
                         "Select aisle number", 
@@ -66,7 +68,7 @@ ui <- fluidPage(
             tabPanel("Aisle Traffic",
                      plotOutput("timePlot")
             ),
-            tabPanel("Aisle Traffic (plotly)",
+            tabPanel("Aisle Traffic (interactive)",
                      plotlyOutput("timePlot2")
             ),
           )
@@ -77,16 +79,13 @@ ui <- fluidPage(
     h2("Aisle products"),
     
     fluidRow(
-      column(5, "Input file should contain two columns:", 
-             strong("town (character)"), "and" ,
-             strong("storey (numeric)."),
-             "There should also be a header row."
-             ),
-      column(4, fileInput("file1", "Upload csv file", accept=".csv")),
-      column(3, downloadButton("download", "Download"))
+      column(12, strong("Choose an aisle above to see what is in store!"))
     ),
+    hr(),
     fluidRow(
-      column(12, tableOutput("data_display"), align="center")
+      column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
+      column(10, dataTableOutput("data_display_left"), align="center")
+      # column(5, dataTableOutput("data_display_right"), align="center")
     )
 )
 
@@ -99,13 +98,12 @@ server <- function(input, output) {
       })
     
   output$timePlot <- renderPlot({
-
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>% 
       mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
       summarise(ct = n(), .groups="drop") 
     ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
       geom_line() + scale_x_chron(format = "%H:%M") +
-      labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
+      labs(title="Traffic per aisle", y="number of people", x="Time", col="Aisles")
   })
   output$timePlot2 <- renderPlotly({
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>%
@@ -113,21 +111,40 @@ server <- function(input, output) {
       summarise(ct = n(), .groups="drop") 
     p <- ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
       geom_line() + scale_x_chron(format = "%H:%M") +
-      labs(title="Traffic per aisle", y="number people", x="Time", col="Aisles")
+      labs(title="Traffic per aisle", y="number of people", x="Time", col="Aisles")
     ggplotly(p)
   })
   
-  output$data_display <- renderTable({
-    head(output_data(), n=5)
+  main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
+  
+  output$data_display_text <- renderText({
+    disp_text <- toString(input$choose_aisle)
   })
   
-  input_data <- reactive({
-    file <- input$file1
-    ext <- tools::file_ext(file$datapath)
-    req(file)
-    shiny::validate(need(ext == "csv", "Please upload a csv file"))
-    read.csv(file$datapath, header=TRUE)
-  })
+  # output$data_display_aisle <- renderTable({
+  #   a = as.data.frame(input$choose_aisle)
+  #   })
+  
+  output$data_display_left <- renderDataTable({
+    left_table <- group_by(main_filter()) %>% 
+      select(!c("side")) %>% 
+      arrange(aisle, type)
+    })
+  
+  # output$data_display_right <- renderDataTable({
+  #   right_table <- group_by(main_filter()) %>% 
+  #     filter(side == "right") %>% 
+  #     select(!c("side")) %>% 
+  #     arrange(aisle, type)
+  # })
+  
+  # output$data_display <- renderTable({
+  #   head(output_data(), n=5)
+  # })
+  
+  # input_data <- reactive({filter(data, camera %in% input$choose_aisle)
+  # })
+
   
   output_data <- reactive({
     tmp_list_in <- list(town = input_data()$town, storey = input_data()$storey)
@@ -139,6 +156,7 @@ server <- function(input, output) {
     predictions <- content(tmp_out) %>% unlist %>% as.numeric()
     cbind(input_data(), predictions=predictions)
   })
+  
   
   output$download <- downloadHandler(
     filename = function() {
