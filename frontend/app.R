@@ -78,7 +78,19 @@ siderbar <-
       style="position: relative; overflow: visible",
       menuItem( "Daily Insights",tabName='dashboard',icon=icon('magnifying-glass-chart')),
       menuItem("Heat Map", tabName='heat_map',icon=icon('map')),
-      menuItem("Traffic Manager", tabName="aisle_traffic",icon=icon('traffic-light'))
+      menuItem("Traffic Manager", tabName="aisle_traffic",icon=icon('traffic-light')),
+      div(id = "aisle_traffic_cr",
+          conditionalPanel("input.sidebar === 'aisle_traffic'",
+                           dateInput("dates_in",
+                                     "Select date",
+                                     value='2022-08-18'),
+                           selectInput("choose_aisle",
+                                       "Select aisle number",
+                                       selected = "1",
+                                       choices=c("1", "2", "3", "4", "5","6", "7", "8", "9", "10"),
+                                       multiple=TRUE)
+                           )
+          )
     )
   )
                    
@@ -107,7 +119,84 @@ body <- dashboardBody(
     tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu{width:10px;font-size:10px;padding:1px;margin:1px;}')),
     tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu > h4 {width:0px;font-size:0px;padding:0px;margin:0px;}')),
     tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu > p {width:0px;font-size:0px;padding:0px;margin:0px;}')),
-  )
+  ),
+  
+  ##Dashboard body ------------------------------
+  tabItems(
+    ### Daily Insights
+    tabItem( tabName = "dashboard",
+             div(id = 'main_loading_msg',
+                 h1('LOADING...',
+                    style = "color:darkblue", align = "center"),
+                 tags$hr()
+                 ),
+             h1(paste0("18 Aug 2022", "'s insights")),
+             fluidRow(
+               # valueBoxOutput(),#TO-DO: Weekly Customer's Count
+               # valueBoxOutput(),#TO-DO: Most Popular Aisle
+               # valueBoxOutput()#TO-DO: Least Popular Aisle
+             ),
+             h2(paste0("Most crowded")),
+             fluidRow(
+               # valueBoxOutput(),#TO-DO: Most crowded time
+               # valueBoxOutput()#TO-DO: Least crowded time
+             ),
+             
+             #more plots maybe?
+             h2(paste0("Do we want to add a graph??")),
+             fluidRow( column (width = 6, h4("graphA", align = "center")),
+                       column (width = 6, h4("graphB", align = "center"))
+                       ),
+             ),
+    
+    ###Heat Map
+    tabItem( tabName = "heat_map",
+             div(id = 'main_loading_msg',
+                 h1('LOADING...',
+                    style = "color:darkblue", align = "center"),
+                 tags$hr()
+                 )
+             ),
+    
+    ###Aisle Traffic
+    tabItem( tabName = "aisle_traffic",
+             h1(paste0("Traffic Manager")),
+             div(
+             # sidebarLayout(
+               # sidebarPanel(
+               #   dateInput("dates_in",
+               #             "Select date",
+               #             value='2022-08-18'),
+               #   selectInput("choose_aisle",
+               #               "Select aisle number",
+               #               selected = "1",
+               #               choices=c("1", "2", "3", "4", "5","6", "7", "8", "9", "10"),
+               #               multiple=TRUE)
+               #   ),
+               # Show a plot of the generated distribution
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel("Aisle Traffic (interactive)",
+                            plotlyOutput("timePlot2")
+                            ),
+                   ),
+                 
+                   hr(),
+                   h2("Aisle products"),
+
+                   fluidRow(
+                     column(12, strong("Choose an aisle above to see what is in store!"))
+                   ),
+                   hr(),
+                   fluidRow(
+                     column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
+                     column(10, dataTableOutput("data_display_left"), align="center")
+                   )
+               ),
+               # )
+             )
+    )
+    )
 )
 
 
