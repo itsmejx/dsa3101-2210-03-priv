@@ -9,6 +9,7 @@
 
 library(shiny)
 library(shinydashboard)
+library(ggplot2)
 library(tidyverse)
 library(plotly)
 library(httr)
@@ -17,8 +18,22 @@ library(RColorBrewer)
 library(dplyr)
 library(chron)
 library(DT)
+library(lubridate)
+library(stringr)
+library(withr)
+library(treemap)
+library(shinyBS)
+library(shinyjs)
+library(WDI)
+library(geosphere)
+library(magrittr)
+library(shinycssloaders)
+library(timevis)
+options(spinner.color="#FF6272")
 
 Sys.setenv(TZ = 'Etc/GMT+0')
+
+source('helper_functions.R')
 
 #data input
 # hdb <- readRDS('hdb_locs.rds')
@@ -41,54 +56,108 @@ data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
   mutate(camera = as.factor(camera))
 data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
 
+header <-
+  dashboardHeader( title = HTML("BoothY"),
+                   disable= FALSE,
+                   titleWidth=200,
+                   dropdownMenuCustom( type = 'message',
+                                       customSentence = customSentence,
+                              messageItem(
+                                from = "cwj.darren@u.nus.edu",
+                                message="",
+                                icon = icon("envelope"),
+                                href="mailto:cwj.darren@u.nus.edu"
+                              ),
+                              icon = icon('comment')))
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-
-    # Application title
-    titlePanel("Traffic manager"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            dateInput("dates_in", 
-                           "Select date",
-                           value='2022-08-18'),
-            selectInput("choose_aisle",
-                        "Select aisle number", 
-                        selected = "1",
-                        choices=c("1", "2", "3", "4", "5",
-                                  "6", "7", "8", "9", "10"),
-                        multiple=TRUE)
-        ),
-        
-        # Show a plot of the generated distribution
-        mainPanel(
-          tabsetPanel(
-            tabPanel("Aisle Traffic",
-                     plotOutput("timePlot")
-            ),
-            tabPanel("Aisle Traffic (interactive)",
-                     plotlyOutput("timePlot2")
-            ),
-          )
-        )
-    ),
-    
-    hr(),  
-    h2("Aisle products"),
-    
-    fluidRow(
-      column(12, strong("Choose an aisle above to see what is in store!"))
-    ),
-    hr(),
-    fluidRow(
-      column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
-      column(10, dataTableOutput("data_display_left"), align="center")
-      # column(5, dataTableOutput("data_display_right"), align="center")
+siderbar <-
+  dashboardSidebar(
+    width=200,
+    sidebarMenu(
+      id='sidebar',
+      style="position: relative; overflow: visible",
+      menuItem( "Daily Insights",tabName='dashboard',icon=icon('magnifying-glass-chart')),
+      menuItem("Heat Map", tabName='heat_map',icon=icon('map')),
+      menuItem("Traffic Manager", tabName="aisle_traffic",icon=icon('traffic-light'))
     )
+  )
+                   
+body <- dashboardBody(
+  tags$head(
+    tags$script("document.title = 'BoothY Dashboard'"),
+    
+    # Styles
+    tags$style(HTML(".small-box {height:65px}")),
+    tags$style(HTML(".fa {font-size: 35px;")),
+    #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
+    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;")),
+    tags$style(HTML(".fa-map{font-size:20px;")),
+    tags$style(HTML(".fa-traffic-light{font-size:20px;}")),
+    tags$style(HTML('
+                    .skin-blue .main-header .navbar {
+                    background-color: #006272;
+                    }
+                    
+                    .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+                    background-color: #006272;}')),
+    tags$style(HTML("hr {border-top: 1px solid #000000;}")),
+    tags$style(HTML(".shiny-output-error{visibility:hidden;}")),
+    tags$style(HTML(".shiny-output-error:before{visibility:hidden;}")),
+    
+    tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu{width:10px;font-size:10px;padding:1px;margin:1px;}')),
+    tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu > h4 {width:0px;font-size:0px;padding:0px;margin:0px;}')),
+    tags$style(HTML('.navbar-custom-menu>.navbar-nav>li:last-child>.dropdown-menu > p {width:0px;font-size:0px;padding:0px;margin:0px;}')),
+  )
 )
 
+
+# Define UI for application that draws a histogram
+# ui <- fluidPage(
+# 
+#     # Application title
+#     titlePanel("Traffic manager"),
+# 
+#     # Sidebar with a slider input for number of bins 
+#     sidebarLayout(
+#         sidebarPanel(
+#             dateInput("dates_in", 
+#                            "Select date",
+#                            value='2022-08-18'),
+#             selectInput("choose_aisle",
+#                         "Select aisle number", 
+#                         selected = "1",
+#                         choices=c("1", "2", "3", "4", "5",
+#                                   "6", "7", "8", "9", "10"),
+#                         multiple=TRUE)
+#         ),
+#         
+#         # Show a plot of the generated distribution
+#         mainPanel(
+#           tabsetPanel(
+#             tabPanel("Aisle Traffic",
+#                      plotOutput("timePlot")
+#             ),
+#             tabPanel("Aisle Traffic (interactive)",
+#                      plotlyOutput("timePlot2")
+#             ),
+#           )
+#         )
+#     ),
+#     
+#     hr(),  
+#     h2("Aisle products"),
+#     
+#     fluidRow(
+#       column(12, strong("Choose an aisle above to see what is in store!"))
+#     ),
+#     hr(),
+#     fluidRow(
+#       column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
+#       column(10, dataTableOutput("data_display_left"), align="center")
+#       # column(5, dataTableOutput("data_display_right"), align="center")
+#     )
+# )
+ui <- dashboardPage(header,siderbar,body)
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
