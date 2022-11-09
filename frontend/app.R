@@ -104,6 +104,9 @@ body <- dashboardBody(
     #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
     tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;")),
     tags$style(HTML(".fa-map{font-size:20px;")),
+    tags$style(HTML(".fa-fire{font-size:33px}")),
+    tags$style(HTML(".fa-chart-line{font-size:33px}")),
+    tags$style(HTML(".fa-snowflake{font-size:33px}")),
     tags$style(HTML(".fa-traffic-light{font-size:20px;}")),
     tags$style(HTML('
                     .skin-blue .main-header .navbar {
@@ -130,11 +133,13 @@ body <- dashboardBody(
                     style = "color:darkblue", align = "center"),
                  tags$hr()
                  ),
-             h1(paste0("18 Aug 2022", "'s insights")),
+             h1(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
-               # valueBoxOutput(),#TO-DO: Weekly Customer's Count
-               # valueBoxOutput(),#TO-DO: Most Popular Aisle
-               # valueBoxOutput()#TO-DO: Least Popular Aisle
+                valueBoxOutput("daily_count"),# daily customer count
+                valueBoxOutput("weekly_count"),# Weekly customer count
+                valueBoxOutput("weekly_performance"),
+                valueBoxOutput("most_crowded"),#TO-DO: Most Popular Aisle
+                valueBoxOutput("least_crowded")#TO-DO: Least Popular Aisle
              ),
              h2(paste0("Most crowded")),
              fluidRow(
@@ -277,7 +282,67 @@ server <- function(input, output) {
     daily_count_df <- data %>% 
       group_by(date) %>% 
       summarize(ct=n())
-    valueBox("Daily Customer Count","number of customers yesterday",icon=icon('chart-line'))
+    valueBox(
+      VB_style(daily_count_df$ct[1],"font-size:60%;"),
+             "Customer Count",
+             icon=icon('chart-line'),
+             color="teal")
+  })
+  
+  output$weekly_count <- renderValueBox({
+    weekly_count_df <- data %>% 
+      group_by(date) %>% 
+      summarize(ct=n())
+    valueBox(
+      VB_style(sum(weekly_count_df$ct),"font-size:60%;"),
+      "This Week's Customer Count",
+      icon=icon('chart-line'),
+      color="fuchsia")
+  })
+  
+  output$weekly_performance <- renderValueBox({
+    weekly_count_df <- data %>% 
+      group_by(date) %>% 
+      summarize(ct=n())
+    curr_wk_count <- sum(weekly_count_df$ct)
+    last_weeks_count <- 123
+    percent_change <- round(((curr_wk_count - last_weeks_count)/(last_weeks_count)) * 100,digits=3)
+    valueBox(
+      VB_style(paste0(ifelse(percent_change>0,'+','-'),abs(percent_change),'%'),"font-size:60%;"),
+      "This Week's performance",
+      icon=icon('chart-line'),
+      color=ifelse(percent_change>0,'green','red')
+    )
+  })
+  
+  output$most_crowded <- renderValueBox({
+    daily_crowd_df <- data %>%
+      filter(date=="2022-08-18") %>% 
+      group_by(camera) %>% 
+      summarize(ct=n()) %>% 
+    slice(which.max(ct))
+    most_crowded <- daily_crowd_df$camera
+    valueBox(
+      VB_style(paste0("Aisle"," ",most_crowded),"font-size:60%;"),
+      "Most Popular Aisle",
+      icon=icon('fire'),
+      color="orange"
+    )
+  })
+  
+  output$least_crowded <- renderValueBox({
+    daily_crowd_df <- data %>% 
+      filter(date=="2022-08-18") %>%
+      group_by(camera) %>% 
+      summarize(ct=n()) %>% 
+      slice(which.min(ct))
+    least_crowded <- daily_crowd_df$camera
+    valueBox(
+      VB_style(paste0("Aisle"," ",least_crowded),"font-size:60%;"),
+      "Least Popular Aisle",
+      icon=icon('snowflake'),
+      color="aqua"
+    )
   })
   
   main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
