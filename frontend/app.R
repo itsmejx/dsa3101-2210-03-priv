@@ -39,6 +39,8 @@ source('helper_functions.R')
 # hdb <- readRDS('hdb_locs.rds')
 flask_url <- "http://flask:5000/"
 
+
+## Data reading/ api querying
 data = readLines("aisleTraffic/updatedFakeData.json")
 aisleData = read.csv("aisleTraffic/aisleProduce.csv")
 fake_json = lapply(data, fromJSON)
@@ -49,13 +51,15 @@ for (i in 1:length(fake_json)) {
   temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
   data = rbind(data, temp)
 }
-##
 
+## Data processing
 data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
                        time = chron(times. = sapply(strsplit(data$time, " "), "[[", 2))) %>% 
   mutate(camera = as.factor(camera))
 data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
 
+###UI
+##Header
 header <-
   dashboardHeader( title = HTML("BoothY"),
                    disable= FALSE,
@@ -70,13 +74,15 @@ header <-
                               ),
                               icon = icon('comment')))
 
+
+##Sidebar
 siderbar <-
   dashboardSidebar(
     width=200,
     sidebarMenu(
       id='sidebar',
       style="position: relative; overflow: visible",
-      menuItem( "Daily Insights",tabName='dashboard',icon=icon('magnifying-glass-chart')),
+      menuItem("Daily Insights", tabName='dashboard',icon=icon('magnifying-glass-chart')),
       menuItem("Heat Map", tabName='heat_map',icon=icon('map')),
       menuItem("Traffic Manager", tabName="aisle_traffic",icon=icon('traffic-light')),
       div(id = "aisle_traffic_cr",
@@ -154,7 +160,7 @@ body <- dashboardBody(
                        ),
              ),
     
-    ###Heat Map
+    ###Heat Map         #TO-DO: move heat map graph in
     tabItem( tabName = "heat_map",
              div(id = 'main_loading_msg',
                  h1('LOADING...',
@@ -167,90 +173,22 @@ body <- dashboardBody(
     tabItem( tabName = "aisle_traffic",
              h1(paste0("Traffic Manager")),
              div(
-             # sidebarLayout(
-               # sidebarPanel(
-               #   dateInput("dates_in",
-               #             "Select date",
-               #             value='2022-08-18'),
-               #   selectInput("choose_aisle",
-               #               "Select aisle number",
-               #               selected = "1",
-               #               choices=c("1", "2", "3", "4", "5","6", "7", "8", "9", "10"),
-               #               multiple=TRUE)
-               #   ),
-               # Show a plot of the generated distribution
-               mainPanel(
-                 tabsetPanel(
-                   tabPanel("Aisle Traffic (interactive)",
-                            plotlyOutput("timePlot2")
-                            ),
-                   ),
-                 
-                   hr(),
-                   h2("Aisle products"),
-
-                   fluidRow(
-                     column(12, strong("Choose an aisle above to see what is in store!"))
-                   ),
-                   hr(),
-                   fluidRow(
-                     column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
-                     column(10, dataTableOutput("data_display_left"), align="center")
-                   )
-               ),
-               # )
+               plotlyOutput("timePlot2"),
+               hr(),
+               h2("Aisle products"),
+               fluidRow(
+                 column(12, strong("Choose an aisle above to see what is in store!"))
+                 ),
+               hr(),
+               fluidRow(
+                 column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
+                 column(10, dataTableOutput("data_display_left"), align="center")
+                 )
+               )
              )
     )
-    )
-)
+  )
 
-
-# Define UI for application that draws a histogram
-# ui <- fluidPage(
-# 
-#     # Application title
-#     titlePanel("Traffic manager"),
-# 
-#     # Sidebar with a slider input for number of bins 
-#     sidebarLayout(
-#         sidebarPanel(
-#             dateInput("dates_in", 
-#                            "Select date",
-#                            value='2022-08-18'),
-#             selectInput("choose_aisle",
-#                         "Select aisle number", 
-#                         selected = "1",
-#                         choices=c("1", "2", "3", "4", "5",
-#                                   "6", "7", "8", "9", "10"),
-#                         multiple=TRUE)
-#         ),
-#         
-#         # Show a plot of the generated distribution
-#         mainPanel(
-#           tabsetPanel(
-#             tabPanel("Aisle Traffic",
-#                      plotOutput("timePlot")
-#             ),
-#             tabPanel("Aisle Traffic (interactive)",
-#                      plotlyOutput("timePlot2")
-#             ),
-#           )
-#         )
-#     ),
-#     
-#     hr(),  
-#     h2("Aisle products"),
-#     
-#     fluidRow(
-#       column(12, strong("Choose an aisle above to see what is in store!"))
-#     ),
-#     hr(),
-#     fluidRow(
-#       column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
-#       column(10, dataTableOutput("data_display_left"), align="center")
-#       # column(5, dataTableOutput("data_display_right"), align="center")
-#     )
-# )
 ui <- dashboardPage(header,siderbar,body)
 
 # Define server logic required to draw a histogram
@@ -351,51 +289,32 @@ server <- function(input, output) {
     disp_text <- toString(input$choose_aisle)
   })
   
-  # output$data_display_aisle <- renderTable({
-  #   a = as.data.frame(input$choose_aisle)
-  #   })
-  
   output$data_display_left <- renderDataTable({
     left_table <- group_by(main_filter()) %>% 
       select(!c("side")) %>% 
       arrange(aisle, type)
     })
   
-  # output$data_display_right <- renderDataTable({
-  #   right_table <- group_by(main_filter()) %>% 
-  #     filter(side == "right") %>% 
-  #     select(!c("side")) %>% 
-  #     arrange(aisle, type)
+  # output_data <- reactive({
+  #   tmp_list_in <- list(town = input_data()$town, storey = input_data()$storey)
+  #   tmp_out <- POST(flask_url, path="predictions",  
+  #                 body=toJSON(tmp_list_in), verbose(), 
+  #                 content_type_json(), accept_json())
+  #   # check status code
+  #   # handle errors
+  #   predictions <- content(tmp_out) %>% unlist %>% as.numeric()
+  #   cbind(input_data(), predictions=predictions)
   # })
   
-  # output$data_display <- renderTable({
-  #   head(output_data(), n=5)
-  # })
   
-  # input_data <- reactive({filter(data, camera %in% input$choose_aisle)
-  # })
-
-  
-  output_data <- reactive({
-    tmp_list_in <- list(town = input_data()$town, storey = input_data()$storey)
-    tmp_out <- POST(flask_url, path="predictions",  
-                  body=toJSON(tmp_list_in), verbose(), 
-                  content_type_json(), accept_json())
-    # check status code
-    # handle errors
-    predictions <- content(tmp_out) %>% unlist %>% as.numeric()
-    cbind(input_data(), predictions=predictions)
-  })
-  
-  
-  output$download <- downloadHandler(
-    filename = function() {
-      paste("predictions-", Sys.Date(), ".csv", sep="")
-    },
-    content = function(file) {
-      write.csv(output_data(), file, row.names = FALSE)
-    }
-  )
+  # output$download <- downloadHandler(
+  #   filename = function() {
+  #     paste("predictions-", Sys.Date(), ".csv", sep="")
+  #   },
+  #   content = function(file) {
+  #     write.csv(output_data(), file, row.names = FALSE)
+  #   }
+  # )
   
 }
 
