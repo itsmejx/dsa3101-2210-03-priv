@@ -41,16 +41,32 @@ flask_url <- "http://flask:5000/"
 
 
 ## Data reading/ api querying
-data = readLines("aisleTraffic/updatedFakeData.json")
-aisleData = read.csv("aisleTraffic/aisleProduce.csv")
-fake_json = lapply(data, fromJSON)
+
+files <- list.files(path="./DB/", pattern="*.json", full.names=TRUE, recursive=FALSE)
+
 data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
-for (i in 1:length(fake_json)) {
-  idx = i
-  occ = fake_json[[i]]$occurrence
-  temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
-  data = rbind(data, temp)
+for (f in files) {
+  temp = read_json(f)
+  for (i in 1:length(temp$id)) {
+    idx = temp$id[[i]]
+    occ = temp$camera[[i]]
+    dt = temp$datetime[[i]]
+    subtemp  = data.frame(id = idx, camera = occ, time = dt)
+    data = rbind(data, subtemp)
+  }
 }
+
+
+# data = readLines("aisleTraffic/updatedFakeData.json")
+aisleData = read.csv("aisleTraffic/aisleProduce.csv")
+# fake_json = lapply(data, fromJSON)
+# data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+# for (i in 1:length(fake_json)) {
+#   idx = i
+#   occ = fake_json[[i]]$occurrence
+#   temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
+#   data = rbind(data, temp)
+# }
 
 ## Data processing
 data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
@@ -89,7 +105,7 @@ siderbar <-
           conditionalPanel("input.sidebar === 'aisle_traffic'",
                            dateInput("dates_in",
                                      "Select date",
-                                     value='2022-08-18'),
+                                     value='2022-11-09'),
                            selectInput("choose_aisle",
                                        "Select aisle number",
                                        selected = "1",
