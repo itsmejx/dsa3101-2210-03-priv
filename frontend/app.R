@@ -273,6 +273,13 @@ server <- function(input, output) {
     ggplotly(p)
   })
   
+  output$daily_count <- renderValueBox({
+    daily_count_df <- data %>% 
+      group_by(date) %>% 
+      summarize(ct=n())
+    valueBox("Daily Customer Count","number of customers yesterday",icon=icon('chart-line'))
+  })
+  
   main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
   
   output$data_display_text <- renderText({
