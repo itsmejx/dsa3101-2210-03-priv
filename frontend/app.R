@@ -164,20 +164,20 @@ body <- dashboardBody(
     ### Daily Insights
     tabItem( tabName = "dashboard",
              div(id = 'main_loading_msg',
-                 h1('LOADING...',
+                 h1(paste0("Today's Date: ",format(Sys.Date(),format="%d %B %Y (%A)")),
                     style = "color:darkblue", align = "center"),
                  tags$hr()
              ),
-             h1(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
+             h2(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
                valueBoxOutput("daily_count"),# daily customer count
-               valueBoxOutput("weekly_count"),# Weekly customer count
-               valueBoxOutput("weekly_performance"),
                valueBoxOutput("most_crowded"),#TO-DO: Most Popular Aisle
                valueBoxOutput("least_crowded")#TO-DO: Least Popular Aisle
              ),
-             h2(paste0("Most crowded")),
+             h2(paste0("This Week's Performance")),
              fluidRow(
+               valueBoxOutput("weekly_count",width=6),# Weekly customer count
+               valueBoxOutput("weekly_performance",width = 6)
                # valueBoxOutput(),#TO-DO: Most crowded time
                # valueBoxOutput()#TO-DO: Least crowded time
              ),
@@ -297,7 +297,10 @@ server <- function(input, output) {
   })
   
   output$daily_count <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
     daily_count_df <- data %>% 
+      filter(date==yest_date) %>% 
+      distinct(id,date,.keep_all=TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
     valueBox(
@@ -308,34 +311,43 @@ server <- function(input, output) {
   })
   
   output$weekly_count <- renderValueBox({
-    weekly_count_df <- data %>% 
+    yest_date <- as.character(Sys.Date()-1)
+    weekly_count_df <- data %>%
+      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
+      distinct(id,date,.keep_all=TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
     valueBox(
       VB_style(sum(weekly_count_df$ct),"font-size:60%;"),
       "This Week's Customer Count",
       icon=icon('chart-line'),
-      color="fuchsia")
+      color="fuchsia",
+      width=6)
   })
   
   output$weekly_performance <- renderValueBox({
-    weekly_count_df <- data %>% 
+    weekly_count_df <- data %>%
+      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
+      distinct(id,date,.keep_all = TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
     curr_wk_count <- sum(weekly_count_df$ct)
-    last_weeks_count <- 123
+    last_weeks_count <- 400
     percent_change <- round(((curr_wk_count - last_weeks_count)/(last_weeks_count)) * 100,digits=3)
     valueBox(
       VB_style(paste0(ifelse(percent_change>0,'+','-'),abs(percent_change),'%'),"font-size:60%;"),
-      "This Week's performance",
+      "Performance against last week",
       icon=icon('chart-line'),
-      color=ifelse(percent_change>0,'green','red')
+      color=ifelse(percent_change>0,'green','red'),
+      width=6
     )
   })
   
+  ## change date string to fit data
   output$most_crowded <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>%
-      filter(date=="2022-08-18") %>% 
+      filter(date==yest_date) %>% 
       group_by(camera) %>% 
       summarize(ct=n()) %>% 
     slice(which.max(ct))
@@ -348,9 +360,11 @@ server <- function(input, output) {
     )
   })
   
+  ## change date string to fit data
   output$least_crowded <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>% 
-      filter(date=="2022-08-18") %>%
+      filter(date==yest_date) %>%
       group_by(camera) %>% 
       summarize(ct=n()) %>% 
       slice(which.min(ct))
