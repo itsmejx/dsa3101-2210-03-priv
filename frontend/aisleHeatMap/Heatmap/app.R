@@ -16,6 +16,7 @@ library(jsonlite)
 library(DT)
 library(jsonlite)
 library(dplyr)
+library(fresh)
 
 ##add fake information here first
 data = readLines("../UpdatedFakeData.json")
@@ -48,26 +49,31 @@ data <- data %>%
          ungroup()
 
 time_options <- c("12am", paste0(seq(1,11),"am"), paste0(seq(1,11),"pm"))
+date_options <- unique(data$date)
+
+
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
   # Application title
   titlePanel("Heatmap"),
-  
+  theme = "mytheme.css",
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-          dateInput('date', 'Date', value = "2022-08-18"),
+          dateInput('date', 'Date', value = "2022-08-18", min = date_options[1]),
           sliderInput('time','Time (Hours)', value = 0, min = 0, max = 23, post = ":00")
         ),
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("heatmap_plot")
+           plotOutput("heatmap_plot", width = "100%")
         )
     )
 )
+
+
 
 
 # Define server logic required to draw a histogram
@@ -105,9 +111,9 @@ server <- function(input, output) {
         geom_bar(position="fill", stat='identity') +
         scale_fill_gradient2(low = "#FFFF99" , mid = "#FF6600", high = "red", midpoint = mean(data$count), na.value = "#FFFF99") +
         theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
-        labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density")
+        labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count (Hourly)")
       
-    })
+    }, height = 900, width = 800)
 }
 
 # Run the application 

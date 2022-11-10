@@ -74,6 +74,9 @@ data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
   mutate(camera = as.factor(camera))
 data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
 
+
+
+
 ###UI
 ##Header
 header <-
@@ -101,6 +104,16 @@ siderbar <-
       menuItem("Daily Insights", tabName='dashboard',icon=icon('magnifying-glass-chart')),
       menuItem("Heat Map", tabName='heat_map',icon=icon('map')),
       menuItem("Traffic Manager", tabName="aisle_traffic",icon=icon('traffic-light')),
+      div(id = "heat_map_cr",
+          conditionalPanel("input.sidebar === 'heat_map'",
+                           dateInput("date",
+                                     "Select date",
+                                     value='2022-11-09'),
+                           sliderInput('time',
+                                       'Time (Hours)',
+                                       value = 9, min = 9, max = 23, post = ":00")
+                           )
+          ),
       div(id = "aisle_traffic_cr",
           conditionalPanel("input.sidebar === 'aisle_traffic'",
                            dateInput("dates_in",
@@ -154,14 +167,14 @@ body <- dashboardBody(
                  h1('LOADING...',
                     style = "color:darkblue", align = "center"),
                  tags$hr()
-                 ),
+             ),
              h1(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
-                valueBoxOutput("daily_count"),# daily customer count
-                valueBoxOutput("weekly_count"),# Weekly customer count
-                valueBoxOutput("weekly_performance"),
-                valueBoxOutput("most_crowded"),#TO-DO: Most Popular Aisle
-                valueBoxOutput("least_crowded")#TO-DO: Least Popular Aisle
+               valueBoxOutput("daily_count"),# daily customer count
+               valueBoxOutput("weekly_count"),# Weekly customer count
+               valueBoxOutput("weekly_performance"),
+               valueBoxOutput("most_crowded"),#TO-DO: Most Popular Aisle
+               valueBoxOutput("least_crowded")#TO-DO: Least Popular Aisle
              ),
              h2(paste0("Most crowded")),
              fluidRow(
@@ -173,17 +186,16 @@ body <- dashboardBody(
              h2(paste0("Do we want to add a graph??")),
              fluidRow( column (width = 6, h4("graphA", align = "center")),
                        column (width = 6, h4("graphB", align = "center"))
-                       ),
              ),
+    ),
     
     ###Heat Map         #TO-DO: move heat map graph in
     tabItem( tabName = "heat_map",
-             div(id = 'main_loading_msg',
-                 h1('LOADING...',
-                    style = "color:darkblue", align = "center"),
-                 tags$hr()
-                 )
-             ),
+             h1(paste0("Heat Map")),
+             div(
+               plotOutput("heatmap_plot", width = "100%"),
+             )
+    ),
     
     ###Aisle Traffic
     tabItem( tabName = "aisle_traffic",
@@ -194,16 +206,16 @@ body <- dashboardBody(
                h2("Aisle products"),
                fluidRow(
                  column(12, strong("Choose an aisle above to see what is in store!"))
-                 ),
+               ),
                hr(),
                fluidRow(
                  column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
                  column(10, dataTableOutput("data_display_left"), align="center")
-                 )
                )
              )
     )
   )
+)
 
 ui <- dashboardPage(header,siderbar,body)
 
@@ -213,6 +225,58 @@ server <- function(input, output) {
                                             input$dates_in), 
                                camera %in% input$choose_aisle)
       })
+    
+    output$heatmap_plot <- renderPlot({
+      
+      data_heat <- data %>% mutate(time = as.numeric(chron::hours(time))) %>% 
+        group_by(date,time, camera) %>% mutate(count = n()) %>% ungroup()
+      
+      cur_date = input$date
+      cur_time = input$time
+      
+      #cur_date = "2022-11-09"
+      #cur_time = "09"
+      
+      subset <- data_heat %>% filter(date == cur_date & time == cur_time )
+      if (nrow(subset) == 0) {
+        col1 <- rep(c(1:10)) ## Ownself generate aisle values
+        col2 <- rep(0,10) ## customer counts
+        plot_data <- as.data.frame(cbind(col1, col2))
+        plot_data$col1 <- as.factor(plot_data$col1)
+        colnames(plot_data) <- c("Aisles","Customer_Count")
+        
+        plot_data <- plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
+        
+        ggplot(plot_data, aes(fill=Customer_Count,y=t,x=Aisles)) +
+          geom_bar(position="fill", stat='identity') +
+          scale_fill_gradient(low = "#FFFF99" , high = "#FFFF99", na.value = "#FFFF99") +
+          theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
+          labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count\n(Hourly)")
+        
+        
+      } else {
+        subset <- subset %>% select(camera, count)
+        plot_col2 <- matrix(0,10)    ## Need introduce 0 values for aisles with no customers
+        for (i in c(1:nrow(subset))) {
+          cur_aisle = subset[[i, "camera"]]
+          plot_col2[cur_aisle] = subset[[i,"count"]]
+        }
+        
+        aisle_col <- c(1:10)    ## X value --> aisle numbers
+        plot_data <- as.data.frame(cbind(aisle_col, plot_col2))
+        colnames(plot_data) <- c("Aisles","Customer_Count")
+      
+      
+      plot_data <- plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
+      
+      ggplot(plot_data, aes(fill=Customer_Count,y=t,x=Aisles)) +
+        geom_bar(position="fill", stat='identity') +
+        scale_fill_gradient2(low = "#FFFF99" , mid = "#FF6600", high = "red", midpoint = mean(data_heat$count), na.value = "#FFFF99") +
+        theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
+        labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count\n(Hourly)")
+      }
+    })
+    
     
   output$timePlot <- renderPlot({
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>% 
