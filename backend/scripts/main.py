@@ -49,6 +49,6 @@ if __name__ == '__main__':
     schedule.every().day().at("23:45").do(get_output)
     while True:
         schedule.run_pending()
-        time.sleep(86410) #86400 seconds = 24 hours, added 10 seconds for leeway
+        time.sleep(100)
     
 # to run this script, run "python3 main.py" in the terminal
