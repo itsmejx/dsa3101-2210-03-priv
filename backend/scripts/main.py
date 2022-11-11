@@ -3,6 +3,8 @@ import sys
 import pandas as pd
 from form_database import *
 from template_matching import *
+import schedule
+import time
  
 def get_output():
     # remove background
@@ -43,6 +45,10 @@ def get_output():
     df.to_json(f'../output/{this_date}.json', orient='records')
 
 if __name__ == '__main__':
-    get_output()
+    #run the model everyday at 11:45 pm
+    schedule.every().day().at("23:45").do(get_output)
+    while True:
+        schedule.run_pending()
+        time.sleep(86410) #86400 seconds = 24 hours, added 10 seconds for leeway
     
 # to run this script, run "python3 main.py" in the terminal
