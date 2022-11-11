@@ -56,17 +56,7 @@ for (f in files) {
   }
 }
 
-
-# data = readLines("aisleTraffic/updatedFakeData.json")
 aisleData = read.csv("../DB/aisleProduce.csv")
-# fake_json = lapply(data, fromJSON)
-# data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
-# for (i in 1:length(fake_json)) {
-#   idx = i
-#   occ = fake_json[[i]]$occurrence
-#   temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
-#   data = rbind(data, temp)
-# }
 
 ## Data processing
 data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
@@ -178,13 +168,7 @@ body <- dashboardBody(
              fluidRow(
                valueBoxOutput("weekly_count",width=6),
                valueBoxOutput("weekly_performance",width = 6)
-             ),
-             
-             # #more plots maybe?
-             # h2(paste0("Do we want to add a graph??")),
-             # fluidRow( column (width = 6, h4("graphA", align = "center")),
-             #           column (width = 6, h4("graphB", align = "center"))
-             # ),
+             )
     ),
     
     ###Heat Map
@@ -381,28 +365,6 @@ server <- function(input, output) {
       select(!c("side")) %>% 
       arrange(aisle, type)
     })
-  
-  # output_data <- reactive({
-  #   tmp_list_in <- list(town = input_data()$town, storey = input_data()$storey)
-  #   tmp_out <- POST(flask_url, path="predictions",  
-  #                 body=toJSON(tmp_list_in), verbose(), 
-  #                 content_type_json(), accept_json())
-  #   # check status code
-  #   # handle errors
-  #   predictions <- content(tmp_out) %>% unlist %>% as.numeric()
-  #   cbind(input_data(), predictions=predictions)
-  # })
-  
-  
-  # output$download <- downloadHandler(
-  #   filename = function() {
-  #     paste("predictions-", Sys.Date(), ".csv", sep="")
-  #   },
-  #   content = function(file) {
-  #     write.csv(output_data(), file, row.names = FALSE)
-  #   }
-  # )
-  
 }
 
 # Run the application 
