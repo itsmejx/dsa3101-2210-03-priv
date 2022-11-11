@@ -1,1 +1,1 @@
-Create a server
+Frontend portion of the project
