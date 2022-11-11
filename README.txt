@@ -17,7 +17,10 @@ Needed extra applications:
 	https://www.docker.com/products/docker-desktop/
 - Git02.37.1-64 bit
 	https://www.git-scm.com/downloads
-
+- XAMPP
+	https://www.apachefriends.org/download.html 
+- Arduino IDE
+	https://www.arduino.cc/en/software 
 
 Once you have installed the necessary applications!
 
@@ -45,3 +48,5 @@ Steps to run dashboard:
 	a. press "Ctrl" + "c"
 	b. ```docker compose down```
 6. Close any relevant windows.
+
+Refer to backend/camera_setup/README.txt for information to set up ESP32-CAM
