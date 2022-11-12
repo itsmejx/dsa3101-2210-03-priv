@@ -127,11 +127,12 @@ body <- dashboardBody(
     tags$style(HTML(".small-box {height:65px}")),
     tags$style(HTML(".fa {font-size: 35px;")),
     #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
-    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;")),
-    tags$style(HTML(".fa-map{font-size:20px;")),
-    tags$style(HTML(".fa-fire{font-size:33px}")),
-    tags$style(HTML(".fa-chart-line{font-size:33px}")),
-    tags$style(HTML(".fa-snowflake{font-size:33px}")),
+    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;}")),
+    tags$style(HTML(".fa-map{font-size:20px;}")),
+    tags$style(HTML(".fa-fire{font-size:33px;}")),
+    tags$style(HTML(".fa-chart-line{font-size:33px;}")),
+    tags$style(HTML(".fa-clock{font-size:33px;}")),
+    tags$style(HTML(".fa-snowflake{font-size:33px;}")),
     tags$style(HTML(".fa-traffic-light{font-size:20px;}")),
     tags$style(HTML('
                     .skin-blue .main-header .navbar {
@@ -161,8 +162,12 @@ body <- dashboardBody(
              h2(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
                valueBoxOutput("daily_count"),
-               valueBoxOutput("most_crowded"), #TO-DO: Most crowded time
-               valueBoxOutput("least_crowded") #TO-DO: Least crowded time
+               valueBoxOutput("most_crowded"), 
+               valueBoxOutput("least_crowded")
+             ),
+             fluidRow(
+               valueBoxOutput("most_crowded_time",width=6),
+               valueBoxOutput("least_crowded_time",width=6)
              ),
              h2(paste0("This Week's Performance")),
              fluidRow(
@@ -320,7 +325,6 @@ server <- function(input, output) {
     )
   })
   
-  ## change date string to fit data
   output$most_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>%
@@ -337,7 +341,6 @@ server <- function(input, output) {
     )
   })
   
-  ## change date string to fit data
   output$least_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>% 
@@ -351,6 +354,42 @@ server <- function(input, output) {
       "Least Popular Aisle",
       icon=icon('snowflake'),
       color="aqua"
+    )
+  })
+  
+  output$most_crowded_time <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
+    time_df <- data %>% 
+      mutate(hour=format(strptime(time,"%H: %M: %S"),"%H")) %>% 
+      filter(date==yest_date) %>% 
+      group_by(hour) %>% 
+      summarize(ct=n()) %>% 
+      slice(which.max(ct))
+    most_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
+    
+    valueBox(
+      VB_style(paste0(most_crowded_time, " till ",paste0(time_df$hour,":59")), "font-size:60%;"),
+      "Most Popular Hour",
+      icon=icon('clock'),
+      color="maroon"
+    )
+  })
+  
+  output$least_crowded_time <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
+    time_df <- data %>% 
+      mutate(hour=format(strptime(time,"%H: %M: %S"), "%H")) %>% 
+      filter(date==yest_date) %>% 
+      group_by(hour) %>% 
+      summarize(ct=n()) %>% 
+      slice(which.min(ct))
+    least_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
+    
+    valueBox(
+       VB_style(paste0(least_crowded_time, " till ",paste0(time_df$hour,":59")),"font-size:60%;"),
+       "Least Popular Hour",
+       icon=icon('clock'),
+       color="olive"
     )
   })
   
