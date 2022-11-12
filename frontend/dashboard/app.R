@@ -127,11 +127,12 @@ body <- dashboardBody(
     tags$style(HTML(".small-box {height:65px}")),
     tags$style(HTML(".fa {font-size: 35px;")),
     #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
-    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;")),
-    tags$style(HTML(".fa-map{font-size:20px;")),
-    tags$style(HTML(".fa-fire{font-size:33px}")),
-    tags$style(HTML(".fa-chart-line{font-size:33px}")),
-    tags$style(HTML(".fa-snowflake{font-size:33px}")),
+    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;}")),
+    tags$style(HTML(".fa-map{font-size:20px;}")),
+    tags$style(HTML(".fa-fire{font-size:33px;}")),
+    tags$style(HTML(".fa-chart-line{font-size:33px;}")),
+    tags$style(HTML(".fa-clock{font-size:33px;}")),
+    tags$style(HTML(".fa-snowflake{font-size:33px;}")),
     tags$style(HTML(".fa-traffic-light{font-size:20px;}")),
     tags$style(HTML('
                     .skin-blue .main-header .navbar {
@@ -161,8 +162,12 @@ body <- dashboardBody(
              h2(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
                valueBoxOutput("daily_count"),
-               valueBoxOutput("most_crowded"), #TO-DO: Most crowded time
-               valueBoxOutput("least_crowded") #TO-DO: Least crowded time
+               valueBoxOutput("most_crowded"), 
+               valueBoxOutput("least_crowded")
+             ),
+             fluidRow(
+               valueBoxOutput("most_crowded_time",width=6),
+               valueBoxOutput("least_crowded_time",width=6)
              ),
              h2(paste0("This Week's Performance")),
              fluidRow(
@@ -309,7 +314,13 @@ server <- function(input, output) {
       group_by(date) %>% 
       summarize(ct=n())
     curr_wk_count <- sum(weekly_count_df$ct)
-    last_weeks_count <- 400
+    
+    last_week_count_df <- data %>% 
+      filter((date>=as.character(Sys.Date()-16))&(date<=as.character(Sys.Date()-9))) %>% 
+      distinct(id,date,.keep_all = TRUE) %>% 
+      group_by(date) %>% 
+      summarize(ct=n())
+    last_weeks_count <- sum(last_week_count_df$ct)
     percent_change <- round(((curr_wk_count - last_weeks_count)/(last_weeks_count)) * 100,digits=3)
     valueBox(
       VB_style(paste0(ifelse(percent_change>0,'+','-'),abs(percent_change),'%'),"font-size:60%;"),
@@ -320,7 +331,6 @@ server <- function(input, output) {
     )
   })
   
-  ## change date string to fit data
   output$most_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>%
@@ -337,7 +347,6 @@ server <- function(input, output) {
     )
   })
   
-  ## change date string to fit data
   output$least_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>% 
@@ -351,6 +360,42 @@ server <- function(input, output) {
       "Least Popular Aisle",
       icon=icon('snowflake'),
       color="aqua"
+    )
+  })
+  
+  output$most_crowded_time <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
+    time_df <- data %>% 
+      mutate(hour=format(strptime(time,"%H: %M: %S"),"%H")) %>% 
+      filter(date==yest_date) %>% 
+      group_by(hour) %>% 
+      summarize(ct=n()) %>% 
+      slice(which.max(ct))
+    most_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
+    
+    valueBox(
+      VB_style(paste0(most_crowded_time, " till ",paste0(time_df$hour,":59")), "font-size:60%;"),
+      "Most Popular Hour",
+      icon=icon('clock'),
+      color="maroon"
+    )
+  })
+  
+  output$least_crowded_time <- renderValueBox({
+    yest_date <- as.character(Sys.Date()-1)
+    time_df <- data %>% 
+      mutate(hour=format(strptime(time,"%H: %M: %S"), "%H")) %>% 
+      filter(date==yest_date) %>% 
+      group_by(hour) %>% 
+      summarize(ct=n()) %>% 
+      slice(which.min(ct))
+    least_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
+    
+    valueBox(
+       VB_style(paste0(least_crowded_time, " till ",paste0(time_df$hour,":59")),"font-size:60%;"),
+       "Least Popular Hour",
+       icon=icon('clock'),
+       color="olive"
     )
   })
   
