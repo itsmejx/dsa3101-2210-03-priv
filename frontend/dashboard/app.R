@@ -314,7 +314,13 @@ server <- function(input, output) {
       group_by(date) %>% 
       summarize(ct=n())
     curr_wk_count <- sum(weekly_count_df$ct)
-    last_weeks_count <- 400
+    
+    last_week_count_df <- data %>% 
+      filter((date>=as.character(Sys.Date()-16))&(date<=as.character(Sys.Date()-9))) %>% 
+      distinct(id,date,.keep_all = TRUE) %>% 
+      group_by(date) %>% 
+      summarize(ct=n())
+    last_weeks_count <- sum(last_week_count_df$ct)
     percent_change <- round(((curr_wk_count - last_weeks_count)/(last_weeks_count)) * 100,digits=3)
     valueBox(
       VB_style(paste0(ifelse(percent_change>0,'+','-'),abs(percent_change),'%'),"font-size:60%;"),
