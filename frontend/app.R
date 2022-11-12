@@ -21,7 +21,7 @@ library(DT)
 library(lubridate)
 library(stringr)
 library(withr)
-# library(treemap)
+library(treemap)
 library(shinyBS)
 library(shinyjs)
 library(WDI)
@@ -42,7 +42,7 @@ flask_url <- "http://flask:5000/"
 
 ## Data reading/ api querying
 
-files <- list.files(path="../DB/DB", pattern="*.json", full.names=TRUE, recursive=FALSE)
+files <- list.files(path="./DB/", pattern="*.json", full.names=TRUE, recursive=FALSE)
 
 data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
 for (f in files) {
@@ -56,7 +56,17 @@ for (f in files) {
   }
 }
 
-aisleData = read.csv("../DB/aisleProduce.csv")
+
+# data = readLines("aisleTraffic/updatedFakeData.json")
+aisleData = read.csv("aisleTraffic/aisleProduce.csv")
+# fake_json = lapply(data, fromJSON)
+# data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+# for (i in 1:length(fake_json)) {
+#   idx = i
+#   occ = fake_json[[i]]$occurrence
+#   temp  = data.frame(id = idx, camera = occ[1],time = occ[2])
+#   data = rbind(data, temp)
+# }
 
 ## Data processing
 data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
@@ -127,12 +137,11 @@ body <- dashboardBody(
     tags$style(HTML(".small-box {height:65px}")),
     tags$style(HTML(".fa {font-size: 35px;")),
     #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
-    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;}")),
-    tags$style(HTML(".fa-map{font-size:20px;}")),
-    tags$style(HTML(".fa-fire{font-size:33px;}")),
-    tags$style(HTML(".fa-chart-line{font-size:33px;}")),
-    tags$style(HTML(".fa-clock{font-size:33px;}")),
-    tags$style(HTML(".fa-snowflake{font-size:33px;}")),
+    tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;")),
+    tags$style(HTML(".fa-map{font-size:20px;")),
+    tags$style(HTML(".fa-fire{font-size:33px}")),
+    tags$style(HTML(".fa-chart-line{font-size:33px}")),
+    tags$style(HTML(".fa-snowflake{font-size:33px}")),
     tags$style(HTML(".fa-traffic-light{font-size:20px;}")),
     tags$style(HTML('
                     .skin-blue .main-header .navbar {
@@ -155,28 +164,32 @@ body <- dashboardBody(
     ### Daily Insights
     tabItem( tabName = "dashboard",
              div(id = 'main_loading_msg',
-                 h1(paste0("Today's Date: ",format(Sys.Date(),format="%d %B %Y (%A)")),
+                 h1('LOADING...',
                     style = "color:darkblue", align = "center"),
                  tags$hr()
              ),
-             h2(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
+             h1(paste0(format(Sys.Date()-1,format="%d %b %Y"), "'s insights")),
              fluidRow(
-               valueBoxOutput("daily_count"),
-               valueBoxOutput("most_crowded"), 
-               valueBoxOutput("least_crowded")
+               valueBoxOutput("daily_count"),# daily customer count
+               valueBoxOutput("weekly_count"),# Weekly customer count
+               valueBoxOutput("weekly_performance"),
+               valueBoxOutput("most_crowded"),#TO-DO: Most Popular Aisle
+               valueBoxOutput("least_crowded")#TO-DO: Least Popular Aisle
              ),
+             h2(paste0("Most crowded")),
              fluidRow(
-               valueBoxOutput("most_crowded_time",width=6),
-               valueBoxOutput("least_crowded_time",width=6)
+               # valueBoxOutput(),#TO-DO: Most crowded time
+               # valueBoxOutput()#TO-DO: Least crowded time
              ),
-             h2(paste0("This Week's Performance")),
-             fluidRow(
-               valueBoxOutput("weekly_count",width=6),
-               valueBoxOutput("weekly_performance",width = 6)
-             )
+             
+             #more plots maybe?
+             h2(paste0("Do we want to add a graph??")),
+             fluidRow( column (width = 6, h4("graphA", align = "center")),
+                       column (width = 6, h4("graphB", align = "center"))
+             ),
     ),
     
-    ###Heat Map
+    ###Heat Map         #TO-DO: move heat map graph in
     tabItem( tabName = "heat_map",
              h1(paste0("Heat Map")),
              div(
@@ -189,7 +202,6 @@ body <- dashboardBody(
                  valueBoxOutput("in_aisles"),
                  valueBoxOutput("btw_aisles")
                )
-
              )
     ),
     
@@ -197,7 +209,7 @@ body <- dashboardBody(
     tabItem( tabName = "aisle_traffic",
              h1(paste0("Traffic Manager")),
              div(
-               plotlyOutput("timePlot"),
+               plotlyOutput("timePlot2"),
                hr(),
                h2("Aisle products"),
                fluidRow(
@@ -206,7 +218,7 @@ body <- dashboardBody(
                hr(),
                fluidRow(
                  column(2, "Aisle(s) chosen:", textOutput("data_display_text")),
-                 column(10, dataTableOutput("data_display"), align="center")
+                 column(10, dataTableOutput("data_display_left"), align="center")
                )
              )
     )
@@ -239,6 +251,7 @@ server <- function(input, output) {
        colnames(plot_data) <- c("Aisles","Customer_Count")
        
        plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
+             
       
     } else {
       subset <- subset %>% select(camera, count)
@@ -251,6 +264,7 @@ server <- function(input, output) {
       aisle_col <- c(1:10)    ## X value --> aisle numbers
       plot_data <- as.data.frame(cbind(aisle_col, plot_col2))
       colnames(plot_data) <- c("Aisles","Customer_Count")
+      
       
       plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
     }
@@ -297,8 +311,8 @@ server <- function(input, output) {
      done <- c()
      while (length(best)<=3) {
        subset <- subset1[!(subset1$Aisles %in% done), ]
-       # print("subset")
-       # print(subset)
+       print("subset")
+       print(subset)
        
        if (nrow(subset) == 0) {
          break
@@ -328,11 +342,11 @@ server <- function(input, output) {
       }
       done <- append(done, max_aisle)
      }
-     # print("best")
-     # print(best)
+     print("best")
+     print(best)
      if (nrow(best) == 0) {
        disp <- "No Optimal Aisles"
-       #print("ok")
+       print("ok")
        }
      else {
        colnames(best) <- c("aisle1","aisle2")
@@ -342,7 +356,7 @@ server <- function(input, output) {
           disp <- paste0(disp,row, sep="<br/>")  
        }
      }
-     # print(disp)
+     print(disp)
      
     
      
@@ -350,24 +364,27 @@ server <- function(input, output) {
     })
     
     
+  output$timePlot <- renderPlot({
+    sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>% 
+      mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
+      summarise(ct = n(), .groups="drop") 
+    ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
+      geom_line() + scale_x_chron(format = "%H:%M") +
+      labs(title="Traffic per aisle", y="number of people", x="Time", col="Aisles")
+  })
   
-  output$timePlot <- renderPlotly({
+  output$timePlot2 <- renderPlotly({
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>%
       mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
-      summarise(num_people = n(), .groups="drop") 
-    p <- ggplot(sub_df2, aes(x=hour, y=num_people, col=camera)) + geom_point() + 
+      summarise(ct = n(), .groups="drop") 
+    p <- ggplot(sub_df2, aes(x=hour, y=ct, col=camera)) + geom_point() + 
       geom_line() + scale_x_chron(format = "%H:%M") +
-      labs(title="Traffic per Aisle", y="Number of People", x="Time", col="Aisles")
+      labs(title="Traffic per aisle", y="number of people", x="Time", col="Aisles")
     ggplotly(p)
   })
   
-  
-  ##logic for mainPage
   output$daily_count <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
     daily_count_df <- data %>% 
-      filter(date==yest_date) %>% 
-      distinct(id,date,.keep_all=TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
     valueBox(
@@ -378,48 +395,34 @@ server <- function(input, output) {
   })
   
   output$weekly_count <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
-    weekly_count_df <- data %>%
-      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
-      distinct(id,date,.keep_all=TRUE) %>% 
+    weekly_count_df <- data %>% 
       group_by(date) %>% 
       summarize(ct=n())
     valueBox(
       VB_style(sum(weekly_count_df$ct),"font-size:60%;"),
       "This Week's Customer Count",
       icon=icon('chart-line'),
-      color="fuchsia",
-      width=6)
+      color="fuchsia")
   })
   
   output$weekly_performance <- renderValueBox({
-    weekly_count_df <- data %>%
-      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
-      distinct(id,date,.keep_all = TRUE) %>% 
+    weekly_count_df <- data %>% 
       group_by(date) %>% 
       summarize(ct=n())
     curr_wk_count <- sum(weekly_count_df$ct)
-    
-    last_week_count_df <- data %>% 
-      filter((date>=as.character(Sys.Date()-16))&(date<=as.character(Sys.Date()-9))) %>% 
-      distinct(id,date,.keep_all = TRUE) %>% 
-      group_by(date) %>% 
-      summarize(ct=n())
-    last_weeks_count <- sum(last_week_count_df$ct)
+    last_weeks_count <- 123
     percent_change <- round(((curr_wk_count - last_weeks_count)/(last_weeks_count)) * 100,digits=3)
     valueBox(
       VB_style(paste0(ifelse(percent_change>0,'+','-'),abs(percent_change),'%'),"font-size:60%;"),
-      "Performance against last week",
+      "This Week's performance",
       icon=icon('chart-line'),
-      color=ifelse(percent_change>0,'green','red'),
-      width=6
+      color=ifelse(percent_change>0,'green','red')
     )
   })
   
   output$most_crowded <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>%
-      filter(date==yest_date) %>% 
+      filter(date=="2022-08-18") %>% 
       group_by(camera) %>% 
       summarize(ct=n()) %>% 
     slice(which.max(ct))
@@ -433,9 +436,8 @@ server <- function(input, output) {
   })
   
   output$least_crowded <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>% 
-      filter(date==yest_date) %>%
+      filter(date=="2022-08-18") %>%
       group_by(camera) %>% 
       summarize(ct=n()) %>% 
       slice(which.min(ct))
@@ -448,53 +450,39 @@ server <- function(input, output) {
     )
   })
   
-  output$most_crowded_time <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
-    time_df <- data %>% 
-      mutate(hour=format(strptime(time,"%H: %M: %S"),"%H")) %>% 
-      filter(date==yest_date) %>% 
-      group_by(hour) %>% 
-      summarize(ct=n()) %>% 
-      slice(which.max(ct))
-    most_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
-    
-    valueBox(
-      VB_style(paste0(most_crowded_time, " till ",paste0(time_df$hour,":59")), "font-size:60%;"),
-      "Most Popular Hour",
-      icon=icon('clock'),
-      color="maroon"
-    )
-  })
-  
-  output$least_crowded_time <- renderValueBox({
-    yest_date <- as.character(Sys.Date()-1)
-    time_df <- data %>% 
-      mutate(hour=format(strptime(time,"%H: %M: %S"), "%H")) %>% 
-      filter(date==yest_date) %>% 
-      group_by(hour) %>% 
-      summarize(ct=n()) %>% 
-      slice(which.min(ct))
-    least_crowded_time <- format(strptime(time_df$hour,"%H"),"%H:%M")
-    
-    valueBox(
-       VB_style(paste0(least_crowded_time, " till ",paste0(time_df$hour,":59")),"font-size:60%;"),
-       "Least Popular Hour",
-       icon=icon('clock'),
-       color="olive"
-    )
-  })
-  
   main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
   
   output$data_display_text <- renderText({
     disp_text <- toString(input$choose_aisle)
   })
   
-  output$data_display <- renderDataTable({
+  output$data_display_left <- renderDataTable({
     left_table <- group_by(main_filter()) %>% 
       select(!c("side")) %>% 
       arrange(aisle, type)
     })
+  
+  # output_data <- reactive({
+  #   tmp_list_in <- list(town = input_data()$town, storey = input_data()$storey)
+  #   tmp_out <- POST(flask_url, path="predictions",  
+  #                 body=toJSON(tmp_list_in), verbose(), 
+  #                 content_type_json(), accept_json())
+  #   # check status code
+  #   # handle errors
+  #   predictions <- content(tmp_out) %>% unlist %>% as.numeric()
+  #   cbind(input_data(), predictions=predictions)
+  # })
+  
+  
+  # output$download <- downloadHandler(
+  #   filename = function() {
+  #     paste("predictions-", Sys.Date(), ".csv", sep="")
+  #   },
+  #   content = function(file) {
+  #     write.csv(output_data(), file, row.names = FALSE)
+  #   }
+  # )
+  
 }
 
 # Run the application 
