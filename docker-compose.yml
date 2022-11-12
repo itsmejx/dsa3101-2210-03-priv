@@ -6,3 +6,6 @@ services:
       
   flask:
     build: ./backend
+    volumes:
+      - "./camera:/camera"
+    TZ: "Asia/Singapore"
