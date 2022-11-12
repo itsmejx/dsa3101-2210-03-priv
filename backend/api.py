@@ -1,22 +1,18 @@
 import os
 import pandas as pd
 from flask import Flask, request
+import json
 
 app = Flask(__name__)
-
-files = os.listdir('DB/')
-database = {}
-for f in files:
-    temp = pd.read_json('DB/' + f)
-    database[f[:-5]] = temp
-
-file_dict = {}
 
 @app.route("/get_date", methods = ["GET"])
 def get_date():
     date = request.args.get('date')
-    result = database[date]
-    return result.to_json()
+    json_file = f"{date}.json"
+    filename = os.path.join('DB', json_file)
+    f = open(filename, "r")
+    data = json.loads(f.read())
+    return data
 
 if __name__ == "__main__":
     app.run()
