@@ -3,6 +3,7 @@ FROM ubuntu:bionic
 COPY requirements.txt requirements.txt
 COPY scripts scripts
 
+RUN mkdir DB
 RUN apt -y update
 RUN apt -y upgrade
 RUN apt install -y python3
@@ -28,7 +29,6 @@ RUN export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 RUN cp object_detection/packages/tf2/setup.py .
 RUN python3 -m pip install --use-feature=2020-resolver .
 
-WORKDIR /
-RUN mkdir DB
+WORKDIR /scripts
 
 ENTRYPOINT ["python3", "-u", "-m", "flask", "run", "--host=0.0.0.0"]

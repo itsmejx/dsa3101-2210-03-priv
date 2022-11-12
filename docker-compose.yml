@@ -9,3 +9,4 @@ services:
     volumes:
       - "./camera:/camera"
     TZ: "Asia/Singapore"
+    command: python3 main.py
