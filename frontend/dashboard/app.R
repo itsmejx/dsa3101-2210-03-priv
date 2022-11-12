@@ -342,10 +342,7 @@ server <- function(input, output) {
           disp <- paste0(disp,row, sep="<br/>")  
        }
      }
-     # print(disp)
-     
-    
-     
+  
     infoBox("End of Aisles", HTML(disp), color = "red", icon=icon('arrows-down-to-line'))
     })
     
