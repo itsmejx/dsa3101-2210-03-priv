@@ -45,7 +45,7 @@ def template_matching(folder_dir, db):
         if max_keys == []:
             continue
         idx = 0
-        if len(max_keys) > 1:    # more than 1 id with the max appearance, break tie randomly
+        if len(max_keys) > 1:    # more than 1 id with the max matches, break tie randomly
             idx = random.randint(0, len(max_keys)-1)
         id_assigned = max_keys[idx]
         

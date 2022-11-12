@@ -18,10 +18,7 @@ def get_output():
     for cam in camera_names:
         tmp = f'../camera/{cam}'
         os.system(f'python3 background_removal.py {tmp} {tmp}/bg_removed')
-        
-        # remove original photos to save space
-        os.remove
- 
+
     # detect and crop shoes
     for cam in camera_names:
         tmp = f'../camera/{cam}/bg_removed'

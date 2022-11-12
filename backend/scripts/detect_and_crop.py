@@ -17,7 +17,7 @@ detection_model = model_builder.build(model_config=configs['model'], is_training
 
 # Restore checkpoint
 ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
-ckpt.restore(os.path.join('my_ssd_mobnet/', 'ckpt-5')).expect_partial()   # checkpoint 5 seems to be a better model
+ckpt.restore(os.path.join('my_ssd_mobnet/', 'ckpt-5')).expect_partial()   
 
 
 def detect_fn(image):
@@ -69,8 +69,8 @@ def crop(path2images, save):
             continue
         
         image_np = load_image_into_numpy_array(path2images[i])
-        filename = path2images[i][-33:-4]   #retrieve filename for the picture
-        for j in range(len(all_boxes[i])):    # loop through all boxes in a picture
+        filename = path2images[i][-33:-4]   # retrieve filename for the picture
+        for j in range(len(all_boxes[i])):    # loop through all bounding boxes in a picture
             a, b, c, d = all_boxes[i][j]    # normalized coordinates of bounding box
             xmin = int(np.round(b * 320))
             xmax = int(np.round(d * 320))
@@ -79,7 +79,7 @@ def crop(path2images, save):
             # (xmin,ymin) is the top left corner; (xmax,ymax) is the bottom right corner
 
             shoe = array_to_img(image_np[ymin:ymax+1, xmin:xmax+1])
-            shoe.save(f"{save}/{filename}_{j}.jpg") #new way of naming
+            shoe.save(f"{save}/{filename}_{j}.jpg") 
             
 
 
