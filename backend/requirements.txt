@@ -5,3 +5,4 @@ tensorflow==2.6.2
 Pillow==8.4.0
 Cython==0.29.32
 schedule==1.1.0
+Flask
