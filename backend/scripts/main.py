@@ -55,10 +55,9 @@ def get_output():
 
 if __name__ == '__main__':
     #run the model everyday at 11:45 pm
-    schedule.every().day().at("23:45").do(get_output)
-    
+    schedule.every().day.at("23:45").do(get_output)
     while True:
         schedule.run_pending()
-        time.sleep(100)
+        time.sleep(1)
     
 # to run this script, run "python3 main.py" in the terminal
