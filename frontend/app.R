@@ -193,7 +193,15 @@ body <- dashboardBody(
     tabItem( tabName = "heat_map",
              h1(paste0("Heat Map")),
              div(
-               plotOutput("heatmap_plot", width = "100%"),
+               plotlyOutput("heatmap_plot"),
+               hr(),
+               h2("Aisle Reccomendations"),
+               hr()),
+             div(
+               fluidRow(
+                 valueBoxOutput("in_aisles"),
+                 valueBoxOutput("btw_aisles")
+               )
              )
     ),
     
@@ -226,55 +234,133 @@ server <- function(input, output) {
                                camera %in% input$choose_aisle)
       })
     
-    output$heatmap_plot <- renderPlot({
+    data_heat <- data %>% mutate(time = as.numeric(chron::hours(time))) %>% 
+      group_by(date,time, camera) %>% mutate(count = n()) %>% ungroup()
+    
+    plotdata <- reactive({
+     date = input$date
+     time = input$time
+     
+     subset <- filter(data_heat, date == input$date, time == input$time)
+             
+     if (nrow(subset) == 0) {
+       col1 <- rep(c(1:10)) ## Ownself generate aisle values
+       col2 <- rep(0,10) ## customer counts
+       plot_data <- as.data.frame(cbind(col1, col2))
+       plot_data$col1 <- as.factor(plot_data$col1)
+       colnames(plot_data) <- c("Aisles","Customer_Count")
+       
+       plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
+             
       
-      data_heat <- data %>% mutate(time = as.numeric(chron::hours(time))) %>% 
-        group_by(date,time, camera) %>% mutate(count = n()) %>% ungroup()
+    } else {
+      subset <- subset %>% select(camera, count)
+      plot_col2 <- matrix(0,10)    ## Need introduce 0 values for aisles with no customers
+      for (i in c(1:nrow(subset))) {
+        cur_aisle = subset[[i, "camera"]]
+        plot_col2[cur_aisle] = subset[[i,"count"]]
+      }
       
-      cur_date = input$date
-      cur_time = input$time
+      aisle_col <- c(1:10)    ## X value --> aisle numbers
+      plot_data <- as.data.frame(cbind(aisle_col, plot_col2))
+      colnames(plot_data) <- c("Aisles","Customer_Count")
       
-      #cur_date = "2022-11-09"
-      #cur_time = "09"
       
-      subset <- data_heat %>% filter(date == cur_date & time == cur_time )
-      if (nrow(subset) == 0) {
-        col1 <- rep(c(1:10)) ## Ownself generate aisle values
-        col2 <- rep(0,10) ## customer counts
-        plot_data <- as.data.frame(cbind(col1, col2))
-        plot_data$col1 <- as.factor(plot_data$col1)
-        colnames(plot_data) <- c("Aisles","Customer_Count")
-        
-        plot_data <- plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
-        
-        ggplot(plot_data, aes(fill=Customer_Count,y=t,x=Aisles)) +
+      plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
+    }
+    })
+    
+
+    output$heatmap_plot <- renderPlotly({
+      
+      if (all(plotdata()$Customer_Count == 0)) {
+        l <- ggplot(plotdata(), aes(fill=Customer_Count,y=t,x=Aisles)) +
           geom_bar(position="fill", stat='identity') +
-          scale_fill_gradient(low = "#FFFF99" , high = "#FFFF99", na.value = "#FFFF99") +
+          scale_fill_gradient(low = "#FFFF99" , high = "#FFFF99") +
           theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
           labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count\n(Hourly)")
-        
-        
       } else {
-        subset <- subset %>% select(camera, count)
-        plot_col2 <- matrix(0,10)    ## Need introduce 0 values for aisles with no customers
-        for (i in c(1:nrow(subset))) {
-          cur_aisle = subset[[i, "camera"]]
-          plot_col2[cur_aisle] = subset[[i,"count"]]
-        }
-        
-        aisle_col <- c(1:10)    ## X value --> aisle numbers
-        plot_data <- as.data.frame(cbind(aisle_col, plot_col2))
-        colnames(plot_data) <- c("Aisles","Customer_Count")
-      
-      
-      plot_data <- plot_data %>% mutate(Aisles = as.factor(Aisles), t = rep(1, nrow(plot_data))) ## t is just a dummy var for geom bar to have equal height
-      
-      ggplot(plot_data, aes(fill=Customer_Count,y=t,x=Aisles)) +
-        geom_bar(position="fill", stat='identity') +
-        scale_fill_gradient2(low = "#FFFF99" , mid = "#FF6600", high = "red", midpoint = mean(data_heat$count), na.value = "#FFFF99") +
-        theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
-        labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count\n(Hourly)")
+        l <- ggplot(plotdata(), aes(fill=Customer_Count,y=t,x=Aisles)) +
+          geom_bar(position="fill", stat='identity') +
+          scale_fill_gradient2(low = "#FFFF99" , mid = "#FF6600", high = "red", midpoint = mean(data_heat$count)) +
+          theme(panel.background = element_blank(), axis.ticks = element_blank(),axis.text.y=element_blank()) +
+          labs(title ="Heat Map of Customers in Grocery Store", y = "", color = "Customer Density", fill = "Customer Count\n(Hourly)")
       }
+      ggplotly(l, tooltip = c("Aisles","Customer_Count"))
+      
+    })
+    
+    
+    output$in_aisles <- renderInfoBox({
+
+      data_in_aisles <- plotdata() %>% slice_min(Customer_Count, n = 3, with_ties=FALSE) %>% arrange(Aisles)
+      disp_str <- toString(data_in_aisles$Aisles)
+      
+      if (all(plotdata()$Customer_Count == 0)) {
+        disp_str = "No Optimal Aisle"
+      }
+      
+      infoBox("Within Aisles",disp_str, color = "purple", icon = icon('arrows-left-right-to-line'))
+    })
+    
+    output$btw_aisles <- renderInfoBox({
+      
+      subset1 <- plotdata()
+
+     best <- data.frame()
+     done <- c()
+     while (length(best)<=3) {
+       subset <- subset1[!(subset1$Aisles %in% done), ]
+       print("subset")
+       print(subset)
+       
+       if (nrow(subset) == 0) {
+         break
+       }
+
+       max <- max(subset$Customer_Count)
+       mean <- mean(data_heat$count)
+       if (max>mean) {
+         max_aisle <- as.integer(slice_max(subset, subset$Customer_Count, n=1, with_ties = FALSE)$Aisles)
+        if (max_aisle != as.integer(subset$Aisles[[1]])) {   #if at the front then cnt
+           bef_max_aisle <- max_aisle - 1
+           bef_max_aisle_count <- subset[subset$Aisles == bef_max_aisle, "Customer_Count"]
+           if (bef_max_aisle_count < mean) {    ## If aisle before have low crowd
+             best <- rbind(best, c(bef_max_aisle,max_aisle))
+           }
+        }
+        if (max_aisle != as.integer(subset$Aisles[[nrow(subset)]])) { #if last then cant also
+          aft_max_aisle <- max_aisle + 1
+          aft_max_aisle_count <- subset[subset$Aisles == aft_max_aisle, "Customer_Count"]
+          if (aft_max_aisle_count < mean) {   ## If aisle after have low crowd
+            best <- rbind(best, c(max_aisle,aft_max_aisle))
+          }
+        }
+       }
+      else {
+        break
+      }
+      done <- append(done, max_aisle)
+     }
+     print("best")
+     print(best)
+     if (nrow(best) == 0) {
+       disp <- "No Optimal Aisles"
+       print("ok")
+       }
+     else {
+       colnames(best) <- c("aisle1","aisle2")
+       best <- best %>% rowwise() %>% mutate(toprint = paste("Between Aisles", toString(aisle1), "and", toString(aisle2)))
+       disp = ""
+       for (row in best$toprint) {
+          disp <- paste0(disp,row, sep="<br/>")  
+       }
+     }
+     print(disp)
+     
+    
+     
+    infoBox("End of Aisles", HTML(disp), color = "red", icon=icon('arrows-down-to-line'))
     })
     
     
@@ -286,6 +372,7 @@ server <- function(input, output) {
       geom_line() + scale_x_chron(format = "%H:%M") +
       labs(title="Traffic per aisle", y="number of people", x="Time", col="Aisles")
   })
+  
   output$timePlot2 <- renderPlotly({
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>%
       mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
