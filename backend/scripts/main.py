@@ -46,7 +46,7 @@ def get_output():
     # an id cannot appear at multiple cameras at the same timestamp, so we remove duplicates and choose to keep the first occurrence
     df = df.drop_duplicates(subset=['id', 'datetime'], ignore_index=True, keep='first')
     df = df.sort_values(by=['id'])
-    df.to_json(f'../output/{this_date}.json', orient='records')
+    df.to_json(f'../DB/{this_date}.json', orient='records')
     
     # remove photos and clear folders to save space
     # keep only the empty 'uploads' folder and background.jpg
