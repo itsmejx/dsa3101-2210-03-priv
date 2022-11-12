@@ -3,6 +3,3 @@ services:
     build: .
     ports: 
       - "3838:3838"
-
-  flask:
-    build: ./toBeAdded

@@ -3,6 +3,7 @@
 // Complete project details at https://RandomNerdTutorials.com/esp32-cam-post-image-photo-server/
 // Code Based on this example: w3schools.com/php/php_file_upload.asp
 
+date_default_timezone_set('Asia/Singapore');
 $target_dir = "C:\\xampp\\htdocs\\upload\\";
 $datum = mktime(date('H')+0, date('i'), date('s'), date('m'), date('d'), date('y'));
 $target_file = $target_dir . date('Y.m.d_H.i.s_', $datum) . basename($_FILES["imageFile"]["name"]);
