@@ -24,6 +24,16 @@ Needed extra applications:
 
 Once you have installed the necessary applications!
 
+Instructions for setup of camera: (All folders/files references are in backend/camera_setup)
+1. Open XAMPP and start the Apache Server
+2. In the sendimagetolocalserver.ino folder, open the sendimagetolocalserver.ino.ino sketch in the Arduino IDE
+3. Change the SSID as well as the SSID's password
+4. Change serverName to the IP address of the server receiving the photos 
+5. Update serverPath with the directory of the upload.php file
+6. Open the upload.php file and change $target_dir field to the directory where the photos should be uploaded to
+7. In the Arduino IDE upload the sketch to the camera. The camera can now be started to take pictures which will be uploaded to the server
+8. Steps above can be repeated for different cameras. Directories can be changed accordingly so that pictures from different cameras can be uploaded into different folders.
+
 Steps to run dashboard:
 1. On your system's application search function, search for "Git Bash" and run it.
 2. For first time setup, run the following commands on Git Bash (the line between the ``` ```)
@@ -49,4 +59,4 @@ Steps to run dashboard:
 	b. ```docker compose down```
 6. Close any relevant windows.
 
-Refer to backend/camera_setup/README.txt for information to set up ESP32-CAM
+Note: Under backend/camera there are sample photos that can be used
