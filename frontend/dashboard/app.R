@@ -297,8 +297,8 @@ server <- function(input, output) {
      done <- c()
      while (length(best)<=3) {
        subset <- subset1[!(subset1$Aisles %in% done), ]
-       print("subset")
-       print(subset)
+       # print("subset")
+       # print(subset)
        
        if (nrow(subset) == 0) {
          break
@@ -328,11 +328,11 @@ server <- function(input, output) {
       }
       done <- append(done, max_aisle)
      }
-     print("best")
-     print(best)
+     # print("best")
+     # print(best)
      if (nrow(best) == 0) {
        disp <- "No Optimal Aisles"
-       print("ok")
+       #print("ok")
        }
      else {
        colnames(best) <- c("aisle1","aisle2")
@@ -342,7 +342,7 @@ server <- function(input, output) {
           disp <- paste0(disp,row, sep="<br/>")  
        }
      }
-     print(disp)
+     # print(disp)
      
     
      
