@@ -31,4 +31,5 @@ RUN python3 -m pip install --use-feature=2020-resolver .
 
 WORKDIR /scripts
 
-ENTRYPOINT ["python3", "-u", "-m", "flask", "run", "--host=0.0.0.0"]
+CMD ["flask", "run"]
+#ENTRYPOINT ["python3", "-u", "-m", "flask", "run", "--host=0.0.0.0"]
