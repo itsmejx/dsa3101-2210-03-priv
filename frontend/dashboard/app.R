@@ -291,11 +291,11 @@ server <- function(input, output) {
     
     output$btw_aisles <- renderInfoBox({
       
-      subset1 <- plotdata()
+     subset1 <- plotdata()
 
      best <- data.frame()
      done <- c()
-     while (length(best)<=3) {
+     while (nrow(best)<=3) {
        subset <- subset1[!(subset1$Aisles %in% done), ]
        # print("subset")
        # print(subset)
@@ -330,6 +330,7 @@ server <- function(input, output) {
      }
      # print("best")
      # print(best)
+
      if (nrow(best) == 0) {
        disp <- "No Optimal Aisles"
        #print("ok")
