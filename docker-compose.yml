@@ -6,3 +6,12 @@ services:
       
   flask:
     build: ./backend
+    volumes:
+      - "./camera:/camera"
+    environment:
+      - TZ="Asia/Singapore"
+      - LC_ALL=C.UTF-8
+      - LANG = C.UTF-8
+    command: "python3 main.py"
+    ports:
+      - "5000:5000"
