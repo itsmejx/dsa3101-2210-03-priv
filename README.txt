@@ -40,7 +40,7 @@ Steps to run dashboard:
 	a. ```cd ~/Desktop/```
 	b. ```git clone git@github.com:itsmejx/dsa3101-2210-03-priv```
 3. To start, click on "StartBoothy.cmd". (Run as administrator as needed)
-4. Once it finishes loading, click on "StartBoothy2.cmd. (Run as administrator as needed)
+4. Once it finishes loading, click on "StartBoothy2.cmd". (Run as administrator as needed)
 5. Click on "start_here.html"
 6. To stop, click on "StopBoothy.cmd". (Run as administrator as needed)
 
