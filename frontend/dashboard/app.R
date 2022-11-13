@@ -36,9 +36,9 @@ Sys.setenv(TZ = 'Etc/GMT+0')
 source('helper_functions.R')
 
 #data input
-flask_url <- "http://localhost:5000/"
+# flask_url <- "http://localhost:5000/"
 # flask_url <- "http://127.0.0.1:5000/"
-# flask_url <- "http://flask:5000/"
+flask_url <- "http://flask:5000/"
 
 aisleData = read.csv("../DB/aisleProduce.csv")
 
