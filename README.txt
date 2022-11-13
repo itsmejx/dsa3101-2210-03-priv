@@ -40,6 +40,7 @@ Steps to run dashboard:
 	a. ```cd ~/Desktop/```
 	b. ```git clone git@github.com:itsmejx/dsa3101-2210-03-priv```
 3. To start, click on "StartBoothy.cmd". (Run as administrator as needed)
+4. Once it finishes loading, click on "StartBoothy2.cmd. (Run as administrator as needed)
 4. Click on "start_here.html"
 5. To stop, click on "StopBoothy.cmd". (Run as administrator as needed)
 
@@ -53,6 +54,9 @@ Steps to run dashboard:
 4. To run the dashboard, open the folder that was created and run the following commands on Git Bash
 	a. ```cd ~/Desktop/dsa3101-2210-03-priv```
 	b. ```docker compose up```, and wait for it to load
+5. Open another Git Bash
+	a. ```cd ~/Desktop/dsa3101-2210-03-priv```
+	b. ```docker exec dsa3101-2210-03-priv-flask-1 python3 -u -m flask run --host=0.0.0.0```
 	c. click on "start_here.html" or go to "http://localhost:3838"
 5. To end the session, run the following commands on Git Bash
 	a. press "Ctrl" + "c"

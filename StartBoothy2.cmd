@@ -1,0 +1,1 @@
+start "" "%PROGRAMFILES%\Git\bin\sh.exe" -c "docker exec dsa3101-2210-03-priv-flask-1 python3 -u -m flask run --host=0.0.0.0"

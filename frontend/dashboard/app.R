@@ -36,36 +36,11 @@ Sys.setenv(TZ = 'Etc/GMT+0')
 source('helper_functions.R')
 
 #data input
-# hdb <- readRDS('hdb_locs.rds')
-flask_url <- "http://flask:5000/"
-
-
-## Data reading/ api querying
-
-files <- list.files(path="../DB/DB", pattern="*.json", full.names=TRUE, recursive=FALSE)
-
-data = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
-for (f in files) {
-  temp = read_json(f)
-  for (i in 1:length(temp$id)) {
-    idx = temp$id[[i]]
-    occ = temp$camera[[i]]
-    dt = temp$datetime[[i]]
-    subtemp  = data.frame(id = idx, camera = occ, time = dt)
-    data = rbind(data, subtemp)
-  }
-}
+flask_url <- "http://localhost:5000/"
+# flask_url <- "http://127.0.0.1:5000/"
+# flask_url <- "http://flask:5000/"
 
 aisleData = read.csv("../DB/aisleProduce.csv")
-
-## Data processing
-data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
-                       time = chron(times. = sapply(strsplit(data$time, " "), "[[", 2))) %>% 
-  mutate(camera = as.factor(camera))
-data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))
-
-
-
 
 ###UI
 ##Header
@@ -98,7 +73,7 @@ siderbar <-
           conditionalPanel("input.sidebar === 'heat_map'",
                            dateInput("date",
                                      "Select date",
-                                     value='2022-11-09'),
+                                     value=as.character(Sys.Date()-1)),
                            sliderInput('time',
                                        'Time (Hours)',
                                        value = 9, min = 9, max = 23, post = ":00")
@@ -108,7 +83,7 @@ siderbar <-
           conditionalPanel("input.sidebar === 'aisle_traffic'",
                            dateInput("dates_in",
                                      "Select date",
-                                     value='2022-11-09'),
+                                     value=as.character(Sys.Date()-1)),
                            selectInput("choose_aisle",
                                        "Select aisle number",
                                        selected = "1",
@@ -126,7 +101,6 @@ body <- dashboardBody(
     # Styles
     tags$style(HTML(".small-box {height:65px}")),
     tags$style(HTML(".fa {font-size: 35px;")),
-    #tags$style(HTML(".glyphicon {font-size:33px;}")), # use glyphicon package
     tags$style(HTML(".fa-magnifying-glass-chart{font-size:20px;}")),
     tags$style(HTML(".fa-map{font-size:20px;}")),
     tags$style(HTML(".fa-fire{font-size:33px;}")),
@@ -182,7 +156,7 @@ body <- dashboardBody(
              div(
                plotlyOutput("heatmap_plot"),
                hr(),
-               h2("Aisle Reccomendations"),
+               h2("Aisle Recommendations"),
                hr()),
              div(
                fluidRow(
@@ -222,9 +196,47 @@ server <- function(input, output) {
                                camera %in% input$choose_aisle)
       })
     
+    ###API Query for stats page
+    stats_wk1 = as.character(seq.Date(Sys.Date()-7, Sys.Date()-1, length.out = 7))
+    stats_wk2 = as.character(seq.Date(Sys.Date()-14, Sys.Date()-8, length.out = 7))
+    
+    final_stats_1 = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+    for (i in stats_wk1){
+      temp1 = GET(flask_url, path="get_date", query = list(date = i))
+      temp1 = content(temp1)
+      for (i in 1:length(temp1$id)) {
+        idx = temp1$id[[i]]
+        occ = temp1$camera[[i]]
+        dt = temp1$datetime[[i]]
+        subtemp  = data.frame(id = idx, camera = occ, time = dt)
+        final_stats_1 = rbind(final_stats_1, subtemp)
+      }
+    }
+    final_stats_2 = data.frame(id = numeric(0), camera = numeric(0), time = character(0))
+    for (i in stats_wk2){
+      temp2 = GET(flask_url, path="get_date", query = list(date = i))
+      temp2 = content(temp2)
+      for (i in 1:length(temp2$id)) {
+        idx = temp2$id[[i]]
+        occ = temp2$camera[[i]]
+        dt = temp2$datetime[[i]]
+        subtemp  = data.frame(id = idx, camera = occ, time = dt)
+        final_stats_2 = rbind(final_stats_2, subtemp)
+      }
+    }
+    
+    ##Data processing
+    data = rbind(final_stats_1, final_stats_2)
+    data = data %>% mutate(date = sapply(strsplit(data$time, " "), "[[", 1),
+                           time = chron(times. = sapply(strsplit(data$time, " "), "[[", 2))) %>% 
+      mutate(camera = as.factor(camera))
+    data$camera = factor(data$camera,levels=c("1","2","3","4","5","6","7","8","9","10"))##for graphs
+    
     data_heat <- data %>% mutate(time = as.numeric(chron::hours(time))) %>% 
       group_by(date,time, camera) %>% mutate(count = n()) %>% ungroup()
     
+    
+    ##logic for heatMap
     plotdata <- reactive({
      date = input$date
      time = input$time
@@ -290,15 +302,11 @@ server <- function(input, output) {
     })
     
     output$btw_aisles <- renderInfoBox({
-      
       subset1 <- plotdata()
-
      best <- data.frame()
      done <- c()
      while (length(best)<=3) {
        subset <- subset1[!(subset1$Aisles %in% done), ]
-       # print("subset")
-       # print(subset)
        
        if (nrow(subset) == 0) {
          break
@@ -328,11 +336,8 @@ server <- function(input, output) {
       }
       done <- append(done, max_aisle)
      }
-     # print("best")
-     # print(best)
      if (nrow(best) == 0) {
        disp <- "No Optimal Aisles"
-       #print("ok")
        }
      else {
        colnames(best) <- c("aisle1","aisle2")
@@ -347,7 +352,7 @@ server <- function(input, output) {
     })
     
     
-  
+  ##logic for aisleTraffic
   output$timePlot <- renderPlotly({
     sub_df2 <- group_by(sub_df(), camera, hour = chron::hours(time)) %>%
       mutate(hour = chron(times. = paste(as.character(hour),":00:00"), format = "h:m:s")) %>% 
@@ -356,6 +361,19 @@ server <- function(input, output) {
       geom_line() + scale_x_chron(format = "%H:%M") +
       labs(title="Traffic per Aisle", y="Number of People", x="Time", col="Aisles")
     ggplotly(p)
+  })
+  
+  ##For aisleTraffic aisle products
+  main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
+  
+  output$data_display_text <- renderText({
+    disp_text <- toString(input$choose_aisle)
+  })
+  
+  output$data_display <- renderDataTable({
+    left_table <- group_by(main_filter()) %>% 
+      select(!c("side")) %>% 
+      arrange(aisle, type)
   })
   
   
@@ -373,11 +391,11 @@ server <- function(input, output) {
              icon=icon('chart-line'),
              color="teal")
   })
-  
+  ###weekly count
   output$weekly_count <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
-    weekly_count_df <- data %>%
-      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
+    weekly_count_df <- data %>% 
+      filter((date>=as.character(Sys.Date()-7))&(date<=as.character(Sys.Date()-1))) %>% 
       distinct(id,date,.keep_all=TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
@@ -389,16 +407,17 @@ server <- function(input, output) {
       width=6)
   })
   
+  ###Weekly performance
   output$weekly_performance <- renderValueBox({
-    weekly_count_df <- data %>%
-      filter((date>=as.character(Sys.Date()-8))&(date<=as.character(Sys.Date()-1))) %>% 
+    weekly_count_df <- data %>% 
+      filter((date>=as.character(Sys.Date()-7))&(date<=as.character(Sys.Date()-1))) %>% 
       distinct(id,date,.keep_all = TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
     curr_wk_count <- sum(weekly_count_df$ct)
     
     last_week_count_df <- data %>% 
-      filter((date>=as.character(Sys.Date()-16))&(date<=as.character(Sys.Date()-9))) %>% 
+      filter((date>=as.character(Sys.Date()-14))&(date<=as.character(Sys.Date()-8))) %>% 
       distinct(id,date,.keep_all = TRUE) %>% 
       group_by(date) %>% 
       summarize(ct=n())
@@ -413,6 +432,7 @@ server <- function(input, output) {
     )
   })
   
+  ###Most crowded
   output$most_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>%
@@ -429,6 +449,8 @@ server <- function(input, output) {
     )
   })
   
+  
+  ###Least crowded
   output$least_crowded <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     daily_crowd_df <- data %>% 
@@ -445,6 +467,7 @@ server <- function(input, output) {
     )
   })
   
+  ###Most crowded time
   output$most_crowded_time <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     time_df <- data %>% 
@@ -463,6 +486,7 @@ server <- function(input, output) {
     )
   })
   
+  ###Least crowded time
   output$least_crowded_time <- renderValueBox({
     yest_date <- as.character(Sys.Date()-1)
     time_df <- data %>% 
@@ -480,18 +504,6 @@ server <- function(input, output) {
        color="olive"
     )
   })
-  
-  main_filter <- reactive({filter(aisleData, aisle %in% input$choose_aisle)})
-  
-  output$data_display_text <- renderText({
-    disp_text <- toString(input$choose_aisle)
-  })
-  
-  output$data_display <- renderDataTable({
-    left_table <- group_by(main_filter()) %>% 
-      select(!c("side")) %>% 
-      arrange(aisle, type)
-    })
 }
 
 # Run the application 
