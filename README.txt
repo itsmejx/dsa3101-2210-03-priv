@@ -41,8 +41,8 @@ Steps to run dashboard:
 	b. ```git clone git@github.com:itsmejx/dsa3101-2210-03-priv```
 3. To start, click on "StartBoothy.cmd". (Run as administrator as needed)
 4. Once it finishes loading, click on "StartBoothy2.cmd. (Run as administrator as needed)
-4. Click on "start_here.html"
-5. To stop, click on "StopBoothy.cmd". (Run as administrator as needed)
+5. Click on "start_here.html"
+6. To stop, click on "StopBoothy.cmd". (Run as administrator as needed)
 
 
 [If the above instructions do not work]
@@ -58,9 +58,9 @@ Steps to run dashboard:
 	a. ```cd ~/Desktop/dsa3101-2210-03-priv```
 	b. ```docker exec dsa3101-2210-03-priv-flask-1 python3 -u -m flask run --host=0.0.0.0```
 	c. click on "start_here.html" or go to "http://localhost:3838"
-5. To end the session, run the following commands on Git Bash
+6. To end the session, run the following commands on Git Bash
 	a. press "Ctrl" + "c"
 	b. ```docker compose down```
-6. Close any relevant windows.
+7. Close any relevant windows.
 
 Note: Under backend/camera there are sample photos that can be used
